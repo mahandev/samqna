@@ -1,0 +1,10 @@
+{{define "list_fragment"}}{{template "list_inner" .}}{{end}}
+{{define "list_inner"}}
+<div class="card-grid">
+{{range .Submissions}}
+  {{template "card" .}}
+{{else}}
+  <p class="muted">No matching submissions.</p>
+{{end}}
+</div>
+{{end}}

@@ -1,0 +1,12 @@
+{{define "card"}}
+<a href="/v/{{.ID}}" class="card">
+  <img src="/v/{{.ID}}/thumb" alt="" class="thumb">
+  <div class="card-body">
+    <div class="score">{{if .QualityScore}}{{.QualityScore}}{{else}}—{{end}}</div>
+    <div class="summary">{{if .Summary}}{{.Summary}}{{else}}(processing)…{{end}}</div>
+    <div class="tags">
+      {{range .Tags}}{{template "tag_chip" .Name}}{{end}}
+    </div>
+  </div>
+</a>
+{{end}}

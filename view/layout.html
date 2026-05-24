@@ -1,0 +1,21 @@
+{{define "base"}}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{template "title" .}} · SamQnA</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/htmx.min.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="brand">SamQnA</a>
+    <nav>
+      <a href="/browse">Browse</a>
+      <a href="/submit">Ask</a>
+    </nav>
+  </header>
+  <main class="container">{{template "content" .}}</main>
+  <footer class="footer">Open Q&amp;A inbox · powered by AI triage</footer>
+</body>
+</html>{{end}}

@@ -1,0 +1,37 @@
+{{define "title"}}{{if .Summary}}{{.Summary}}{{else}}Submission{{end}}{{end}}
+{{define "content"}}
+<article class="video-page">
+  <div class="player">
+    {{if .HasVideo}}
+      <video controls src="/v/{{.ID}}/video" poster="/v/{{.ID}}/thumb"></video>
+    {{else if .HasAudio}}
+      <img src="/v/{{.ID}}/thumb" alt="" class="thumb-large">
+      <audio controls src="/v/{{.ID}}/audio"></audio>
+    {{else}}
+      <p class="muted">Media unavailable.</p>
+    {{end}}
+  </div>
+
+  <aside>
+    <div id="status" hx-get="/v/{{.ID}}/status" hx-trigger="every 2s" hx-swap="outerHTML">
+      {{template "status_fragment" .}}
+    </div>
+    <h2>Summary</h2>
+    <p>{{if .Summary}}{{.Summary}}{{else}}(processing)…{{end}}</p>
+    <h2>Transcript</h2>
+    <pre class="transcript">{{if .Transcript}}{{.Transcript}}{{else}}(processing)…{{end}}</pre>
+    <h2>Tags</h2>
+    <div class="tags">{{range .Tags}}{{template "tag_chip" .Name}}{{end}}</div>
+    <div class="exports">
+      <a class="btn primary" href="/v/{{.ID}}/export">Download MP4</a>
+      <button class="btn" onclick="document.getElementById('trim-ui').hidden = false">Trim &amp; download</button>
+    </div>
+    <div id="trim-ui" hidden>
+      <label>Start <input type="range" id="trim-start" min="0" max="{{.DurationSec}}" value="0"></label>
+      <label>End <input type="range" id="trim-end" min="0" max="{{.DurationSec}}" value="{{.DurationSec}}"></label>
+      <button class="btn" id="trim-go" data-id="{{.ID}}">Download trim</button>
+    </div>
+  </aside>
+</article>
+<script src="/static/trim.js" defer></script>
+{{end}}

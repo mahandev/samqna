@@ -1,0 +1,35 @@
+{{define "title"}}Submit{{end}}
+{{define "content"}}
+<h1>Submit a question</h1>
+<p class="muted">≤ 60 seconds. By submitting, you agree your video will be publicly visible.</p>
+
+<form id="upload-form" action="/submit" method="post" enctype="multipart/form-data" class="stack">
+  <label>Optional email (notify if your question is answered)
+    <input type="email" name="email" autocomplete="email">
+  </label>
+
+  <div class="recorder">
+    <button type="button" id="rec-toggle" class="btn">● Record</button>
+    <video id="rec-preview" autoplay muted playsinline></video>
+    <div id="rec-timer" class="muted">0s / 60s</div>
+  </div>
+
+  <label>Or upload an existing file
+    <input type="file" name="video" accept="video/*">
+  </label>
+
+  <label class="checkbox">
+    <input type="checkbox" name="consent" required>
+    I understand my submission will be publicly visible.
+  </label>
+
+  {{if .TurnstileSite}}
+  <div class="cf-turnstile" data-sitekey="{{.TurnstileSite}}"></div>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  {{end}}
+
+  <button type="submit" class="btn primary">Submit</button>
+</form>
+
+<script src="/static/recorder.js" defer></script>
+{{end}}

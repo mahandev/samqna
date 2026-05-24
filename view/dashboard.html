@@ -1,0 +1,25 @@
+{{define "title"}}Browse{{end}}
+{{define "content"}}
+<h1>Submitted questions</h1>
+
+<form id="filters" hx-get="/browse/list" hx-target="#list" hx-trigger="change, keyup delay:300ms" hx-push-url="true" class="filters">
+  <div class="tag-cloud">
+    {{range $name, $count := .Tags}}
+      <label class="tag-chip">
+        <input type="checkbox" name="tag" value="{{$name}}">
+        {{$name}} <span class="count">{{$count}}</span>
+      </label>
+    {{end}}
+  </div>
+  <label>Min quality
+    <input type="range" name="min_score" min="0" max="100" value="{{.MinScore}}">
+  </label>
+  <label class="checkbox">
+    <input type="checkbox" name="starred" value="1" {{if .StarredOnly}}checked{{end}}> Starred only
+  </label>
+</form>
+
+<div id="list">
+  {{template "list_inner" .}}
+</div>
+{{end}}
