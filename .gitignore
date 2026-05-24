@@ -1,0 +1,10 @@
+/tmp/
+/data/
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.local
+samqna
+dist/
+.DS_Store
