@@ -50,6 +50,9 @@ func (s *TagGradeStage) Run(ctx context.Context, sub *model.Submission) error {
 	if sub.Transcript == nil || strings.TrimSpace(*sub.Transcript) == "" {
 		return fmt.Errorf("submission %s has empty transcript", sub.ID)
 	}
+	if len(s.Models) == 0 {
+		return fmt.Errorf("TagGradeStage has no models configured")
+	}
 
 	var lastErr error
 	var grade llmGrade
@@ -115,7 +118,10 @@ func (s *TagGradeStage) call(ctx context.Context, model, transcript string) (llm
 	})
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	req, _ := http.NewRequestWithContext(ctx, "POST", s.Endpoint, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.Endpoint, bytes.NewReader(body))
+	if err != nil {
+		return llmGrade{}, fmt.Errorf("build request: %w", err)
+	}
 	req.Header.Set("Authorization", "Bearer "+s.APIKey)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -125,7 +131,7 @@ func (s *TagGradeStage) call(ctx context.Context, model, transcript string) (llm
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		out, _ := io.ReadAll(resp.Body)
+		out, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return llmGrade{}, fmt.Errorf("status %d: %s", resp.StatusCode, string(out))
 	}
 	var cr chatResp

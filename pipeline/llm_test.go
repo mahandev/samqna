@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -99,5 +98,29 @@ func (f *fakeTagRepo) GetOrCreate(names []string) ([]model.Tag, error) {
 	return out, nil
 }
 
-// sanity: discard
-var _ = json.RawMessage("{}")
+func TestTagGradeStage_NilTranscriptErrors(t *testing.T) {
+	st := &TagGradeStage{Models: []string{"m"}}
+	sub := &model.Submission{ID: "x"}
+	err := st.Run(context.Background(), sub)
+	require.ErrorContains(t, err, "empty transcript")
+}
+
+func TestTagGradeStage_IsSpamQuarantines(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"tags\":[],\"quality_score\":90,\"summary\":\"abusive\",\"is_spam\":true,\"spam_reason\":\"slurs\"}"}}]}`))
+	}))
+	defer server.Close()
+	tr := &fakeTagRepo{}
+	st := &TagGradeStage{
+		Client: server.Client(), Endpoint: server.URL, APIKey: "x",
+		Models: []string{"m"}, QualityThreshold: 30, TagRepo: tr,
+		AttachTags: func(_ *model.Submission, _ []model.Tag) error { return nil },
+	}
+	tx := "x"
+	sub := &model.Submission{ID: "x", Transcript: &tx, Status: model.StatusProcessing}
+	require.NoError(t, st.Run(context.Background(), sub))
+	require.Equal(t, model.StatusQuarantined, sub.Status)
+	require.NotNil(t, sub.SpamReason)
+	require.Equal(t, "slurs", *sub.SpamReason)
+}
+
