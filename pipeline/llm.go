@@ -38,12 +38,18 @@ type llmGrade struct {
 	SpamReason   *string  `json:"spam_reason"`
 }
 
-const graderSystemPrompt = `You are an assistant that triages short user-submitted question videos for a creator's Q&A inbox. Given the transcript, return strict JSON only (no prose) matching this schema:
-{"tags":[lowercase, hyphenated topic tags, max 5],
- "quality_score":0-100 integer (relevance, clarity, specificity),
- "summary":"one-line plain summary of the question",
- "is_spam":boolean (true if abusive, off-topic, promo, gibberish),
- "spam_reason":string or null}
+const graderSystemPrompt = `You triage short video questions submitted to Sam Sulek's open Q&A inbox.
+
+Sam is a young bodybuilding YouTuber known for high-volume training, blunt no-fluff advice, dry humor, and off-the-cuff "in the car" vlogs. He mainly answers questions about training (hypertrophy, splits, volume, intensity, form), diet (bulking, cutting, macros, meals), supplements (creatine, protein, pre-workout), recovery (sleep, deload, soreness), body composition, and gym culture. He ALSO enjoys answering occasional off-topic fun questions when they're entertaining or unusual (relationships, hot takes, weird hypotheticals, life advice).
+
+Given the transcript, return strict JSON only (no prose, no markdown fences) matching this schema:
+{
+  "tags": array of 1-5 lowercase hyphenated topic tags. Prefer specific bodybuilding tags ("hypertrophy", "deload", "cutting", "creatine", "shoulder-press", "form-check", "rest-days") over generic ones. For off-topic questions, tag the actual subject ("dating-advice", "life-philosophy", "hot-take", "random").
+  "quality_score": integer 0-100. Score on a weighted blend of (a) relevance to Sam's expertise + audience, (b) specificity, (c) clarity, (d) entertainment value. Specific well-articulated bodybuilding questions land 80-95. Generic bodybuilding questions ("what should I eat?", "is creatine good?") land 50-65. Off-topic but genuinely funny / unusual / well-asked questions still score 50-70 — Sam will take a fun question over a boring training one. Vague, low-effort, repetitive, mumbled, or filler clips land below 30.
+  "summary": one-line plain summary of the question (max 120 chars).
+  "is_spam": true ONLY for abusive, promo, gibberish, or completely zero-effort uploads. Off-topic does NOT equal spam.
+  "spam_reason": short string or null.
+}
 Return only the JSON object.`
 
 func (s *TagGradeStage) Run(ctx context.Context, sub *model.Submission) error {

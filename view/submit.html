@@ -1,57 +1,109 @@
-{{define "title"}}Ask a question{{end}}
+{{define "title"}}Ask Sam{{end}}
 {{define "content"}}
-<div class="max-w-2xl mx-auto">
-  <div class="text-center mb-6">
-    <h1 class="text-3xl font-bold tracking-tight">Ask a question</h1>
-    <p class="text-base-content/70 mt-2">Record up to 60 seconds. Your video goes straight into the public feed for the creator to triage.</p>
-  </div>
 
-  <form id="upload-form" action="/submit" method="post" enctype="multipart/form-data" class="card bg-base-100 border border-base-300">
-    <div class="card-body gap-5">
+<div class="mb-8">
+  <a href="/" class="text-neutral-500 hover:text-neutral-300 text-xs uppercase tracking-widest font-semibold">← Back to feed</a>
+  <h1 class="font-display text-4xl sm:text-5xl tracking-wide mt-2 leading-none">
+    DROP YOUR <span class="text-yellow-400">QUESTION</span>.
+  </h1>
+  <p class="text-neutral-400 mt-3 max-w-xl">60 seconds. Auto-uploads when you stop. You'll be in the feed before you put your phone down.</p>
+</div>
 
-      <div class="form-control">
-        <label class="label" for="email"><span class="label-text">Email (optional, for notifications)</span></label>
-        <input id="email" type="email" name="email" autocomplete="email" placeholder="you@example.com" class="input input-bordered w-full">
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+  <!-- LEFT: recorder + form -->
+  <form id="upload-form" action="/submit" method="post" enctype="multipart/form-data" class="lg:col-span-3 rounded-2xl bg-neutral-900 border border-neutral-800 p-6 sm:p-8 space-y-6">
+
+    <!-- preview -->
+    <div class="relative aspect-video rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800">
+      <video id="rec-preview" autoplay muted playsinline class="w-full h-full object-cover"></video>
+      <div id="rec-timer" class="absolute bottom-3 right-3 px-2.5 py-1 rounded-md bg-black/80 border border-neutral-700 font-mono text-yellow-400 text-sm font-bold">0s / 60s</div>
+      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <span class="text-neutral-700 font-display text-3xl tracking-wider" id="rec-placeholder">PRESS RECORD</span>
       </div>
+    </div>
 
-      <div class="form-control">
-        <label class="label"><span class="label-text font-medium">Record</span></label>
-        <div class="aspect-video bg-base-300 rounded-lg overflow-hidden mb-3 relative">
-          <video id="rec-preview" autoplay muted playsinline class="w-full h-full object-cover"></video>
-          <div id="rec-timer" class="absolute bottom-2 right-2 badge badge-neutral font-mono">0s / 60s</div>
-        </div>
-        <button type="button" id="rec-toggle" class="btn btn-error btn-block gap-2">
-          <span class="text-xl leading-none">●</span> Record
-        </button>
-      </div>
+    <!-- big record button -->
+    <button type="button" id="rec-toggle" class="btn btn-lg btn-block bg-red-600 hover:bg-red-500 text-white border-0 font-display text-xl tracking-widest sq-press shadow-[0_0_24px_rgba(220,38,38,0.35)]">
+      ● RECORD
+    </button>
 
-      <div class="divider text-xs opacity-50">OR</div>
+    <div class="flex items-center gap-3 text-xs text-neutral-500 uppercase tracking-widest">
+      <div class="h-px bg-neutral-800 flex-1"></div>
+      <span>or upload a clip</span>
+      <div class="h-px bg-neutral-800 flex-1"></div>
+    </div>
 
-      <div class="form-control">
-        <label class="label" for="file"><span class="label-text">Upload an existing file</span></label>
-        <input id="file" type="file" name="video" accept="video/*" class="file-input file-input-bordered w-full">
-      </div>
+    <input id="file" type="file" name="video" accept="video/*" class="file-input file-input-bordered w-full bg-neutral-950 border-neutral-700 text-neutral-300">
 
-      <label class="label cursor-pointer justify-start gap-3 bg-base-200 rounded-lg p-3">
-        <input type="checkbox" name="consent" required class="checkbox checkbox-primary checkbox-sm">
-        <span class="label-text">I understand my submission will be publicly visible.</span>
+    <div class="space-y-3 pt-2">
+      <input id="email" type="email" name="email" autocomplete="email" placeholder="email (optional — get pinged if Sam answers)" class="input input-bordered w-full bg-neutral-950 border-neutral-700 text-neutral-300 placeholder:text-neutral-600">
+
+      <label class="flex items-start gap-3 p-3 rounded-lg bg-neutral-950 border border-neutral-800 cursor-pointer">
+        <input type="checkbox" name="consent" required class="checkbox checkbox-warning checkbox-sm mt-0.5">
+        <span class="text-sm text-neutral-300">I understand my video goes on the public feed. Sam and the AI both see it.</span>
       </label>
 
       {{if .TurnstileSite}}
-      <div class="cf-turnstile self-center" data-sitekey="{{.TurnstileSite}}"></div>
+      <div class="cf-turnstile" data-sitekey="{{.TurnstileSite}}" data-theme="dark"></div>
       <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
       {{end}}
 
-      <div id="upload-progress" class="hidden">
-        <div class="text-sm text-base-content/70 mb-1" id="upload-label">Uploading…</div>
-        <progress id="upload-bar" class="progress progress-primary w-full" value="0" max="100"></progress>
+      <div id="upload-progress" class="hidden space-y-1">
+        <div class="text-xs uppercase tracking-wider text-neutral-400" id="upload-label">Uploading…</div>
+        <progress id="upload-bar" class="progress progress-warning w-full" value="0" max="100"></progress>
       </div>
 
-      <button type="submit" id="submit-btn" class="btn btn-primary btn-block">Submit</button>
+      <button type="submit" id="submit-btn" class="btn btn-block bg-yellow-400 hover:bg-yellow-300 text-black border-0 font-bold uppercase tracking-wider sq-press">
+        Submit to Sam
+      </button>
     </div>
   </form>
 
-  <p class="text-xs text-base-content/50 text-center mt-4">Powered by AI triage. Your video is transcribed, tagged, and quality-graded automatically.</p>
+  <!-- RIGHT: instructions / tips -->
+  <aside class="lg:col-span-2 space-y-4">
+    <div class="rounded-2xl bg-gradient-to-br from-yellow-400/10 to-transparent border border-yellow-400/20 p-5">
+      <p class="text-xs uppercase tracking-widest text-yellow-400 font-semibold mb-3">How it works</p>
+      <ol class="space-y-3">
+        <li class="flex items-start gap-3">
+          <span class="sq-step-num shrink-0">1</span>
+          <div>
+            <p class="font-display text-lg tracking-wide leading-none">HIT RECORD</p>
+            <p class="text-sm text-neutral-400 mt-0.5">Up to 60 sec. Camera + mic.</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="sq-step-num shrink-0">2</span>
+          <div>
+            <p class="font-display text-lg tracking-wide leading-none">ASK YOUR Q</p>
+            <p class="text-sm text-neutral-400 mt-0.5">Be specific. Mumbling is allowed, Sam mumbles too.</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="sq-step-num shrink-0">3</span>
+          <div>
+            <p class="font-display text-lg tracking-wide leading-none">AUTO UPLOAD</p>
+            <p class="text-sm text-neutral-400 mt-0.5">Stop recording = upload starts. You'll land on the feed.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="rounded-2xl bg-neutral-900 border border-neutral-800 p-5">
+      <p class="text-xs uppercase tracking-widest text-neutral-500 font-semibold mb-3">Quality tips</p>
+      <ul class="space-y-2 text-sm text-neutral-300">
+        <li class="flex gap-2"><span class="text-yellow-400">→</span> Speak clearly, mic close to your face.</li>
+        <li class="flex gap-2"><span class="text-yellow-400">→</span> One question per video. Not a TED talk.</li>
+        <li class="flex gap-2"><span class="text-yellow-400">→</span> Higher AI score = better feed placement.</li>
+        <li class="flex gap-2"><span class="text-yellow-400">→</span> No spam, slurs, promo. Auto-quarantined.</li>
+      </ul>
+    </div>
+
+    <div class="rounded-2xl bg-neutral-900 border border-neutral-800 p-5">
+      <p class="text-xs uppercase tracking-widest text-neutral-500 font-semibold mb-1">Privacy</p>
+      <p class="text-sm text-neutral-400">Videos kept 30 days, audio + transcript forever. Sam can star the bangers to keep the full video.</p>
+    </div>
+  </aside>
 </div>
 
 <script src="/static/recorder.js" defer></script>

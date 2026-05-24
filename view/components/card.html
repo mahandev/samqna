@@ -1,28 +1,43 @@
 {{define "card"}}
 <div id="card-{{.ID}}"
-     class="card card-compact bg-base-100 border {{if .IsNew}}border-primary ring-2 ring-primary/40{{else}}border-base-300{{end}} hover:shadow-md transition-shadow {{if eq .Status "processing"}}sq-processing{{end}}"
+     class="group rounded-xl bg-neutral-900 border {{if .IsNew}}border-yellow-400 sq-new{{else}}border-neutral-800 hover:border-neutral-700{{end}} overflow-hidden transition-all {{if eq .Status "processing"}}sq-processing{{end}}"
      {{if eq .Status "processing"}}hx-get="/v/{{.ID}}/card" hx-trigger="every 4s" hx-swap="outerHTML"{{end}}>
   <a href="/v/{{.ID}}" class="block">
-    <figure class="aspect-video bg-base-300 overflow-hidden relative">
-      <img src="/v/{{.ID}}/thumb" alt="" class="w-full h-full object-cover">
+    <figure class="aspect-video bg-neutral-950 overflow-hidden relative">
+      <img src="/v/{{.ID}}/thumb" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300">
+
       {{if .IsNew}}
-        <span class="absolute top-2 left-2 badge badge-primary badge-sm shadow">Just submitted</span>
+        <span class="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-400 text-black text-[10px] font-bold uppercase tracking-widest shadow">
+          ⚡ Just submitted
+        </span>
       {{end}}
+
       {{if eq .Status "processing"}}
-        <span class="absolute top-2 right-2 badge badge-warning badge-sm gap-1">
-          <span class="loading loading-spinner loading-xs"></span>processing
+        <span class="absolute top-2 right-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/80 text-yellow-400 text-[10px] font-bold uppercase tracking-widest border border-yellow-400/30">
+          <span class="loading loading-spinner loading-xs"></span> Processing
         </span>
       {{else if eq .Status "failed"}}
-        <span class="absolute top-2 right-2 badge badge-error badge-sm">failed</span>
+        <span class="absolute top-2 right-2 px-2 py-1 rounded-md bg-red-600 text-white text-[10px] font-bold uppercase tracking-widest">Failed</span>
       {{else if .QualityScore}}
-        <span class="absolute top-2 right-2 badge badge-neutral badge-lg font-mono">{{.QualityScore}}</span>
+        <span class="absolute top-2 right-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-black/80 border border-yellow-400/30">
+          <span class="sq-score text-yellow-400 text-lg leading-none">{{.QualityScore}}</span>
+          <span class="text-[10px] text-neutral-400 uppercase tracking-widest">/100</span>
+        </span>
       {{end}}
+
+      <!-- bottom-gradient + play affordance -->
+      <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div>
+      <span class="absolute bottom-2 left-2 inline-flex items-center gap-1 text-[10px] text-neutral-300 uppercase tracking-widest font-semibold">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        Play
+      </span>
     </figure>
-    <div class="card-body">
-      <p class="text-base-content {{if not .Summary}}sq-placeholder italic text-base-content/50{{end}}">
-        {{if .Summary}}{{.Summary}}{{else}}Listening to the question…{{end}}
+
+    <div class="p-4">
+      <p class="text-[15px] leading-snug text-neutral-100 line-clamp-3 {{if not .Summary}}sq-placeholder italic text-neutral-500{{end}}">
+        {{if .Summary}}{{.Summary}}{{else}}Sam's AI is listening to the question…{{end}}
       </p>
-      <div class="flex flex-wrap gap-1 mt-1">
+      <div class="mt-3 flex flex-wrap gap-1">
         {{range .Tags}}{{template "tag_chip" .Name}}{{end}}
       </div>
     </div>

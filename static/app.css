@@ -1,5 +1,49 @@
-/* DaisyUI + Tailwind own the bulk of the styling.
-   Custom utilities only for things that don't fit cleanly into a utility class. */
+/* --- Sulek theme: dark, bold, yellow accents -------------------------------
+   Implemented as DaisyUI custom-theme CSS variables. DaisyUI uses HSL
+   triplets (no commas, no hsl() wrapper) for its semantic color tokens.
+--------------------------------------------------------------------------- */
+
+[data-theme="sulek"] {
+  color-scheme: dark;
+
+  /* primary = signature yellow */
+  --p:  48 95% 53%;
+  --pc: 0 0% 4%;
+
+  /* secondary = amber (warnings, badges) */
+  --s:  38 92% 50%;
+  --sc: 0 0% 4%;
+
+  /* accent = pale yellow highlight */
+  --a:  45 93% 65%;
+  --ac: 0 0% 4%;
+
+  /* neutral / surfaces */
+  --n:  0 0% 9%;
+  --nc: 0 0% 98%;
+
+  --b1: 0 0% 4%;     /* page background — near-black */
+  --b2: 0 0% 9%;     /* elevated surface */
+  --b3: 0 0% 15%;    /* cards / hover */
+  --bc: 0 0% 95%;    /* base text */
+
+  /* status colors */
+  --in:  217 91% 60%;  --inc: 0 0% 100%;
+  --su:  84 81% 44%;   --suc: 0 0% 4%;
+  --wa:  38 92% 50%;   --wac: 0 0% 4%;
+  --er:  0 84% 60%;    --erc: 0 0% 100%;
+
+  /* component radii — slightly softer than default */
+  --rounded-box: 1rem;
+  --rounded-btn: 0.5rem;
+  --rounded-badge: 0.375rem;
+
+  /* keep cards from getting too tall */
+  --animation-btn: 0.18s;
+  --animation-input: 0.18s;
+}
+
+/* Sulek-specific visual flourishes ----------------------------------------- */
 
 /* Subtle pulse on placeholder fields while a submission is processing. */
 @keyframes sq-pulse {
@@ -8,13 +52,42 @@
 }
 .sq-placeholder { animation: sq-pulse 1.8s ease-in-out infinite; }
 
-/* Processing cards get a faint shimmer on the thumbnail figure background. */
+/* Processing cards get a yellow shimmer on the thumbnail figure. */
 .sq-processing figure {
-  background: linear-gradient(110deg, hsl(var(--b3)) 30%, hsl(var(--b2)) 50%, hsl(var(--b3)) 70%);
-  background-size: 200% 100%;
-  animation: sq-shimmer 2.2s linear infinite;
+  background:
+    linear-gradient(110deg, transparent 30%, rgba(250, 204, 21, 0.12) 50%, transparent 70%),
+    #1c1c1c;
+  background-size: 200% 100%, 100% 100%;
+  animation: sq-shimmer 2.4s linear infinite;
 }
 @keyframes sq-shimmer {
-  0%   { background-position: 100% 0; }
-  100% { background-position: -100% 0; }
+  0%   { background-position: 100% 0, 0 0; }
+  100% { background-position: -100% 0, 0 0; }
+}
+
+/* Big yellow "press feedback" on the record button. */
+.sq-press:active { transform: scale(0.97); transition: transform 80ms ease-out; }
+
+/* Numbered step strip ("1 → 2 → 3"). */
+.sq-step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2rem; height: 2rem; border-radius: 9999px;
+  background: #FACC15; color: #0A0A0A;
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 1.125rem; line-height: 1;
+}
+
+/* Just-submitted card ring — pulsates briefly so the user spots it. */
+@keyframes sq-glow {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.7), 0 0 20px rgba(250, 204, 21, 0.25); }
+  50%      { box-shadow: 0 0 0 2px rgba(250, 204, 21, 1.0), 0 0 36px rgba(250, 204, 21, 0.5); }
+}
+.sq-new { animation: sq-glow 2.0s ease-in-out infinite; }
+
+/* Score numbers use the display font for personality. */
+.sq-score { font-family: 'Anton', system-ui, sans-serif; letter-spacing: 0.02em; }
+
+/* Respect users with reduced-motion preference. */
+@media (prefers-reduced-motion: reduce) {
+  .sq-placeholder, .sq-processing figure, .sq-new { animation: none; }
 }

@@ -6,49 +6,56 @@
 {{end}}
 
 {{define "live_inner"}}
-<div class="card bg-base-100 border border-base-300">
-  <div class="card-body gap-4">
-    <div class="flex items-center justify-between">
-      <h2 class="card-title text-base">Status</h2>
-      {{$cls := "badge-ghost"}}
-      {{if eq .Status "ready"}}{{$cls = "badge-success"}}{{end}}
-      {{if eq .Status "processing"}}{{$cls = "badge-warning"}}{{end}}
-      {{if eq .Status "failed"}}{{$cls = "badge-error"}}{{end}}
-      {{if eq .Status "quarantined"}}{{$cls = "badge-neutral"}}{{end}}
-      <div class="badge {{$cls}} gap-1">
-        {{if eq .Status "processing"}}<span class="loading loading-spinner loading-xs"></span>{{end}}
-        {{.Status}}
-      </div>
-    </div>
+<div class="rounded-2xl bg-neutral-900 border border-neutral-800 p-5 space-y-5">
 
-    <div>
-      <h3 class="font-semibold mb-1">Summary</h3>
-      <p class="text-sm {{if not .Summary}}sq-placeholder italic text-base-content/50{{end}}">
-        {{if .Summary}}{{.Summary}}{{else}}Working on it…{{end}}
-      </p>
-    </div>
-
-    {{if .QualityScore}}
-    <div>
-      <h3 class="font-semibold mb-1">Quality</h3>
-      <div class="flex items-center gap-2">
-        <progress class="progress progress-primary w-full" value="{{.QualityScore}}" max="100"></progress>
-        <span class="font-mono text-sm w-10 text-right">{{.QualityScore}}</span>
-      </div>
-    </div>
+  <!-- status header -->
+  <div class="flex items-center justify-between">
+    <p class="text-xs uppercase tracking-widest text-neutral-500 font-semibold">Status</p>
+    {{if eq .Status "processing"}}
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-400/10 text-yellow-400 text-xs font-bold uppercase tracking-widest border border-yellow-400/30">
+        <span class="loading loading-spinner loading-xs"></span> Processing
+      </span>
+    {{else if eq .Status "ready"}}
+      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-lime-500/10 text-lime-400 text-xs font-bold uppercase tracking-widest border border-lime-500/30">✓ Ready</span>
+    {{else if eq .Status "failed"}}
+      <span class="px-2.5 py-1 rounded-md bg-red-600/10 text-red-400 text-xs font-bold uppercase tracking-widest border border-red-600/30">Failed</span>
+    {{else if eq .Status "quarantined"}}
+      <span class="px-2.5 py-1 rounded-md bg-neutral-800 text-neutral-400 text-xs font-bold uppercase tracking-widest border border-neutral-700">Quarantined</span>
     {{end}}
+  </div>
 
-    <div>
-      <h3 class="font-semibold mb-1">Tags</h3>
-      <div class="flex flex-wrap gap-1">
-        {{range .Tags}}{{template "tag_chip" .Name}}{{else}}<span class="text-xs text-base-content/50 italic">no tags yet</span>{{end}}
-      </div>
-    </div>
+  <!-- summary -->
+  <div>
+    <p class="text-xs uppercase tracking-widest text-neutral-500 font-semibold mb-2">Summary</p>
+    <p class="text-[15px] leading-snug {{if not .Summary}}sq-placeholder italic text-neutral-600{{end}}">
+      {{if .Summary}}{{.Summary}}{{else}}Sam's AI is still listening…{{end}}
+    </p>
+  </div>
 
-    <div>
-      <h3 class="font-semibold mb-1">Transcript</h3>
-      <pre class="text-sm whitespace-pre-wrap bg-base-200 rounded p-3 max-h-64 overflow-auto {{if not .Transcript}}sq-placeholder italic text-base-content/50{{end}}">{{if .Transcript}}{{.Transcript}}{{else}}Listening…{{end}}</pre>
+  <!-- quality -->
+  {{if .QualityScore}}
+  <div>
+    <p class="text-xs uppercase tracking-widest text-neutral-500 font-semibold mb-2">Quality score</p>
+    <div class="flex items-end gap-3">
+      <span class="sq-score text-yellow-400 text-5xl leading-none">{{.QualityScore}}</span>
+      <span class="text-xs text-neutral-500 uppercase tracking-widest pb-1">/ 100</span>
     </div>
+    <progress class="progress progress-warning w-full mt-2 h-1" value="{{.QualityScore}}" max="100"></progress>
+  </div>
+  {{end}}
+
+  <!-- tags -->
+  <div>
+    <p class="text-xs uppercase tracking-widest text-neutral-500 font-semibold mb-2">Tags</p>
+    <div class="flex flex-wrap gap-1">
+      {{range .Tags}}{{template "tag_chip" .Name}}{{else}}<span class="text-xs text-neutral-600 italic">no tags yet</span>{{end}}
+    </div>
+  </div>
+
+  <!-- transcript -->
+  <div>
+    <p class="text-xs uppercase tracking-widest text-neutral-500 font-semibold mb-2">Transcript</p>
+    <pre class="text-sm whitespace-pre-wrap bg-neutral-950 border border-neutral-800 rounded-lg p-3 max-h-64 overflow-auto font-mono leading-relaxed {{if not .Transcript}}sq-placeholder italic text-neutral-600{{end}}">{{if .Transcript}}{{.Transcript}}{{else}}listening...{{end}}</pre>
   </div>
 </div>
 {{end}}

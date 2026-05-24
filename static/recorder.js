@@ -8,6 +8,7 @@
   const progress = document.getElementById('upload-progress');
   const progressBar = document.getElementById('upload-bar');
   const progressLabel = document.getElementById('upload-label');
+  const recPlaceholder = document.getElementById('rec-placeholder');
   if (!form) return;
 
   let stream, recorder, chunks = [], startedAt = 0, tickHandle, stopHandle;
@@ -21,6 +22,7 @@
       return;
     }
     preview.srcObject = stream;
+    if (recPlaceholder) recPlaceholder.style.display = 'none';
     const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
       ? 'video/webm;codecs=vp9,opus'
       : (MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : 'video/mp4');
@@ -28,9 +30,9 @@
     recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
     recorder.onstop = onRecorderStop;
     recorder.start();
-    btn.textContent = '■ Stop';
-    btn.classList.remove('btn-error');
-    btn.classList.add('btn-warning');
+    btn.textContent = '■ STOP';
+    btn.classList.remove('bg-red-600', 'hover:bg-red-500');
+    btn.classList.add('bg-yellow-400', 'hover:bg-yellow-300', 'text-black');
     startedAt = Date.now();
     tickTime();
     tickHandle = setInterval(tickTime, 200);
@@ -47,9 +49,9 @@
     clearInterval(tickHandle);
     clearTimeout(stopHandle);
     if (stream) stream.getTracks().forEach(t => t.stop());
-    btn.textContent = '● Record';
-    btn.classList.add('btn-error');
-    btn.classList.remove('btn-warning');
+    btn.textContent = '● RECORD';
+    btn.classList.add('bg-red-600', 'hover:bg-red-500');
+    btn.classList.remove('bg-yellow-400', 'hover:bg-yellow-300', 'text-black');
   }
 
   function onRecorderStop() {

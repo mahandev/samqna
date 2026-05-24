@@ -5,8 +5,10 @@
   {{template "card" .}}
 {{else}}
   <div class="col-span-full">
-    <div class="alert bg-base-100 border border-base-300">
-      <span class="text-base-content/60">No submissions match the current filters. Try clearing them or <a href="/submit" class="link link-primary">be the first to ask</a>.</span>
+    <div class="rounded-2xl border-2 border-dashed border-neutral-800 bg-neutral-950/50 p-10 text-center">
+      <div class="font-display text-3xl tracking-wide text-neutral-200">NOBODY'S ASKED YET.</div>
+      <p class="text-neutral-500 mt-2">Be the absolute unit who starts the feed.</p>
+      <a href="/submit" class="btn bg-yellow-400 hover:bg-yellow-300 text-black font-bold uppercase tracking-wider border-0 mt-5 sq-press">Drop the first question →</a>
     </div>
   </div>
 {{end}}

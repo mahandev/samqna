@@ -139,9 +139,10 @@ func TestFeedRendersAtRoot(t *testing.T) {
 	r.ServeHTTP(w, req)
 	require.Equal(t, 200, w.Code)
 	body := w.Body.String()
-	require.Contains(t, body, "Ask a question")               // navbar CTA — proof layout rendered
-	require.Contains(t, body, `data-theme="corporate"`)        // DaisyUI theme attribute
+	require.Contains(t, body, "Ask Sam")                       // navbar CTA — proof layout rendered
+	require.Contains(t, body, `data-theme="sulek"`)            // custom DaisyUI theme attribute
 	require.Contains(t, body, `id="list"`)                     // feed list container exists
+	require.Contains(t, body, "SAM PICKS")                     // hero copy
 }
 
 func TestBrowseRedirectsToRoot(t *testing.T) {

@@ -1,34 +1,56 @@
 {{define "base"}}<!doctype html>
-<html lang="en" data-theme="corporate">
+<html lang="en" data-theme="sulek">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{template "title" .}} · SamQnA</title>
+  <title>{{template "title" .}} · SamSulekQnA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Anton', 'system-ui', 'sans-serif'],
+            sans:    ['Inter', 'system-ui', 'sans-serif'],
+            mono:    ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            sulek: { yellow: '#FACC15', amber: '#F59E0B', ink: '#0A0A0A' },
+          },
+        },
+      },
+    }
+  </script>
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/htmx.min.js" defer></script>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%A5%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='80'%3E%F0%9F%92%AA%3C/text%3E%3C/svg%3E">
 </head>
-<body class="min-h-screen bg-base-200">
-  <div class="navbar bg-base-100 border-b border-base-300 sticky top-0 z-30">
-    <div class="flex-1 max-w-5xl mx-auto w-full px-4">
-      <a href="/" class="btn btn-ghost text-xl normal-case gap-2">
-        <span class="text-2xl">🎥</span>
-        <span class="font-bold">SamQnA</span>
+<body class="min-h-screen bg-black text-neutral-100 font-sans antialiased">
+  <header class="sticky top-0 z-30 bg-black/85 backdrop-blur border-b border-neutral-800">
+    <div class="max-w-6xl mx-auto w-full px-4 h-16 flex items-center gap-4">
+      <a href="/" class="flex items-center gap-2 group">
+        <span class="inline-block w-2 h-8 bg-yellow-400 rounded-sm group-hover:h-9 transition-all"></span>
+        <span class="font-display text-2xl tracking-wide leading-none">SAM SULEK<span class="text-yellow-400">QNA</span></span>
       </a>
       <div class="flex-1"></div>
-      <nav class="flex gap-1">
-        <a href="/" class="btn btn-ghost btn-sm">Browse</a>
-        <a href="/submit" class="btn btn-primary btn-sm">Ask a question</a>
+      <nav class="flex gap-1 items-center">
+        <a href="/" class="btn btn-ghost btn-sm font-semibold uppercase tracking-wider text-neutral-300 hover:text-white">Feed</a>
+        <a href="/submit" class="btn btn-sm bg-yellow-400 hover:bg-yellow-300 text-black font-bold uppercase tracking-wider border-0 shadow-[0_0_24px_rgba(250,204,21,0.35)]">Ask Sam</a>
       </nav>
     </div>
-  </div>
+  </header>
 
-  <main class="max-w-5xl mx-auto w-full px-4 py-6">{{template "content" .}}</main>
+  <main class="max-w-6xl mx-auto w-full px-4 py-8">{{template "content" .}}</main>
 
-  <footer class="footer footer-center p-6 text-base-content/60 text-sm">
-    <p>Open Q&amp;A inbox · powered by AI triage</p>
+  <footer class="border-t border-neutral-900 mt-12">
+    <div class="max-w-6xl mx-auto w-full px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-500 uppercase tracking-widest">
+      <p>BUILT FOR SAM &middot; AI TRIAGES &middot; HUMANS DELIVER</p>
+      <p>NOT AFFILIATED WITH SAM SULEK</p>
+    </div>
   </footer>
 </body>
 </html>{{end}}

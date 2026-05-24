@@ -12,5 +12,7 @@ func Migrate(db *gorm.DB) error {
 		&model.Tag{},
 		&model.Job{},
 		&model.BlockedIP{},
+		&model.AdminAudit{},
+		&model.Setting{},
 	)
 }

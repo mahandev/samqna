@@ -1,11 +1,13 @@
 {{define "status_fragment"}}
-{{$cls := "badge-ghost"}}
-{{if eq .Status "ready"}}{{$cls = "badge-success"}}{{end}}
-{{if eq .Status "processing"}}{{$cls = "badge-warning"}}{{end}}
-{{if eq .Status "failed"}}{{$cls = "badge-error"}}{{end}}
-{{if eq .Status "quarantined"}}{{$cls = "badge-neutral"}}{{end}}
-<div id="status" class="badge {{$cls}} gap-1">
-  {{if eq .Status "processing"}}<span class="loading loading-spinner loading-xs"></span>{{end}}
-  {{.Status}}
-</div>
+{{if eq .Status "processing"}}
+  <span id="status" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-400/10 text-yellow-400 text-xs font-bold uppercase tracking-widest border border-yellow-400/30">
+    <span class="loading loading-spinner loading-xs"></span> Processing
+  </span>
+{{else if eq .Status "ready"}}
+  <span id="status" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-lime-500/10 text-lime-400 text-xs font-bold uppercase tracking-widest border border-lime-500/30">✓ Ready</span>
+{{else if eq .Status "failed"}}
+  <span id="status" class="px-2.5 py-1 rounded-md bg-red-600/10 text-red-400 text-xs font-bold uppercase tracking-widest border border-red-600/30">Failed</span>
+{{else}}
+  <span id="status" class="px-2.5 py-1 rounded-md bg-neutral-800 text-neutral-400 text-xs font-bold uppercase tracking-widest border border-neutral-700">{{.Status}}</span>
+{{end}}
 {{end}}

@@ -1,47 +1,94 @@
-{{define "title"}}Browse{{end}}
+{{define "title"}}Feed{{end}}
 {{define "content"}}
-<section class="hero bg-base-100 rounded-2xl mb-6 border border-base-300">
-  <div class="hero-content text-center py-10">
-    <div class="max-w-2xl">
-      <h1 class="text-4xl font-bold tracking-tight">Q&amp;A — submitted by you, sorted by AI</h1>
-      <p class="py-3 text-base-content/70">Browse what others have asked, or <a href="/submit" class="link link-primary">record your own question</a>.</p>
+
+<!-- HERO ------------------------------------------------------------------ -->
+<section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-neutral-900 via-neutral-950 to-black border border-neutral-800 mb-8">
+  <div class="absolute -top-24 -right-24 w-96 h-96 bg-yellow-400/10 rounded-full blur-3xl"></div>
+  <div class="absolute top-12 -left-12 w-72 h-72 bg-yellow-400/5 rounded-full blur-3xl"></div>
+
+  <div class="relative px-6 sm:px-10 py-12 sm:py-16">
+    <p class="text-xs sm:text-sm tracking-[0.3em] text-yellow-400 font-semibold uppercase mb-3">Open Q&amp;A &middot; AI-triaged</p>
+    <h1 class="font-display text-5xl sm:text-7xl leading-[0.95] tracking-wide max-w-3xl">
+      DROP A QUESTION.<br>
+      <span class="text-yellow-400">SAM PICKS</span> THE BEST<br>
+      FOR HIS NEXT VID.
+    </h1>
+    <p class="mt-5 text-neutral-300 max-w-xl text-base sm:text-lg">
+      Record up to 60 seconds. Whisper transcribes it. Gemini grades and tags it. The bangers float to the top — Sam takes it from there.
+    </p>
+    <div class="mt-7 flex flex-wrap gap-3">
+      <a href="/submit" class="btn btn-lg bg-yellow-400 hover:bg-yellow-300 text-black font-bold uppercase tracking-wider border-0 shadow-[0_0_28px_rgba(250,204,21,0.4)] sq-press">
+        Ask Sam a question →
+      </a>
+      <a href="#feed" class="btn btn-lg btn-outline border-neutral-700 text-neutral-200 hover:bg-neutral-800 hover:border-neutral-700 font-semibold uppercase tracking-wider">
+        Browse the feed
+      </a>
     </div>
   </div>
 </section>
 
+<!-- STEP STRIP ------------------------------------------------------------- -->
+<section class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10">
+  <div class="rounded-xl bg-neutral-900/70 border border-neutral-800 p-5 flex items-start gap-3">
+    <span class="sq-step-num shrink-0">1</span>
+    <div>
+      <h3 class="font-display text-xl tracking-wide leading-none">RECORD 60S</h3>
+      <p class="text-sm text-neutral-400 mt-1">Pop the mic on your phone. Don't overthink it.</p>
+    </div>
+  </div>
+  <div class="rounded-xl bg-neutral-900/70 border border-neutral-800 p-5 flex items-start gap-3">
+    <span class="sq-step-num shrink-0">2</span>
+    <div>
+      <h3 class="font-display text-xl tracking-wide leading-none">AI TRIAGES</h3>
+      <p class="text-sm text-neutral-400 mt-1">Auto-transcribe, tag, score 0–100. Bangers rise.</p>
+    </div>
+  </div>
+  <div class="rounded-xl bg-neutral-900/70 border border-neutral-800 p-5 flex items-start gap-3">
+    <span class="sq-step-num shrink-0">3</span>
+    <div>
+      <h3 class="font-display text-xl tracking-wide leading-none">SAM ANSWERS</h3>
+      <p class="text-sm text-neutral-400 mt-1">He picks the best for his next vid. Or his car vlog.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FILTERS --------------------------------------------------------------- -->
 <form id="filters"
       hx-get="/"
       hx-target="#list"
       hx-trigger="change, keyup delay:300ms"
       hx-select="#list > *"
       hx-push-url="true"
-      class="card bg-base-100 border border-base-300 mb-6">
-  <div class="card-body gap-4">
-    <div class="flex flex-wrap items-center gap-2">
-      <span class="text-sm font-medium text-base-content/60 mr-2">Tags:</span>
-      {{range $name, $count := .Tags}}
-        <label class="cursor-pointer">
-          <input type="checkbox" name="tag" value="{{$name}}" class="peer hidden">
-          <span class="badge badge-outline badge-lg peer-checked:badge-primary peer-checked:text-primary-content gap-1">
-            {{$name}} <span class="opacity-60">{{$count}}</span>
-          </span>
-        </label>
-      {{else}}
-        <span class="text-sm text-base-content/50 italic">No tags yet — submit a question to seed the list.</span>
-      {{end}}
-    </div>
+      class="rounded-xl bg-neutral-900/70 border border-neutral-800 p-5 mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 id="feed" class="font-display text-2xl tracking-wider">THE FEED</h2>
+    <span class="text-xs text-neutral-500 uppercase tracking-widest">filter &middot; sort</span>
+  </div>
 
-    <div class="flex flex-wrap items-center gap-6">
-      <label class="flex items-center gap-3 flex-1 min-w-[200px]">
-        <span class="text-sm font-medium text-base-content/60 whitespace-nowrap">Min quality</span>
-        <input type="range" name="min_score" min="0" max="100" value="{{.MinScore}}" class="range range-primary range-sm flex-1" oninput="this.nextElementSibling.value = this.value">
-        <output class="badge badge-ghost badge-sm w-10 text-center">{{.MinScore}}</output>
+  <div class="flex flex-wrap items-center gap-2 mb-4">
+    <span class="text-xs font-semibold text-neutral-400 uppercase tracking-wider mr-1">Tags</span>
+    {{range $name, $count := .Tags}}
+      <label class="cursor-pointer">
+        <input type="checkbox" name="tag" value="{{$name}}" class="peer hidden">
+        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-md border border-neutral-700 bg-neutral-950 text-neutral-300 text-sm peer-checked:bg-yellow-400 peer-checked:text-black peer-checked:border-yellow-400 transition-colors">
+          {{$name}} <span class="text-xs opacity-60 font-mono">{{$count}}</span>
+        </span>
       </label>
-      <label class="label cursor-pointer gap-2">
-        <input type="checkbox" name="starred" value="1" {{if .StarredOnly}}checked{{end}} class="checkbox checkbox-sm checkbox-primary">
-        <span class="label-text">Starred only</span>
-      </label>
-    </div>
+    {{else}}
+      <span class="text-sm text-neutral-500 italic">No tags yet — be the first.</span>
+    {{end}}
+  </div>
+
+  <div class="flex flex-wrap items-center gap-6">
+    <label class="flex items-center gap-3 flex-1 min-w-[220px]">
+      <span class="text-xs font-semibold text-neutral-400 uppercase tracking-wider whitespace-nowrap">Min quality</span>
+      <input type="range" name="min_score" min="0" max="100" value="{{.MinScore}}" class="range range-warning range-sm flex-1" oninput="this.nextElementSibling.textContent = this.value">
+      <output class="font-mono text-yellow-400 text-sm font-bold w-10 text-right">{{.MinScore}}</output>
+    </label>
+    <label class="cursor-pointer flex items-center gap-2">
+      <input type="checkbox" name="starred" value="1" {{if .StarredOnly}}checked{{end}} class="checkbox checkbox-warning checkbox-sm">
+      <span class="text-sm text-neutral-300 uppercase tracking-wider font-semibold">★ Starred only</span>
+    </label>
   </div>
 </form>
 

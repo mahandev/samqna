@@ -1,40 +1,37 @@
 {{define "title"}}{{if .Summary}}{{.Summary}}{{else}}Submission{{end}}{{end}}
 {{define "content"}}
-<a href="/" class="btn btn-sm btn-ghost mb-4 gap-1">← Back to feed</a>
+<a href="/" class="text-neutral-500 hover:text-neutral-300 text-xs uppercase tracking-widest font-semibold mb-4 inline-block">← Back to feed</a>
 
 <article class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-  <div class="lg:col-span-3">
-    <div class="card bg-base-100 border border-base-300 overflow-hidden">
+
+  <div class="lg:col-span-3 space-y-4">
+    <div class="rounded-2xl bg-neutral-900 border border-neutral-800 overflow-hidden">
       {{if .HasVideo}}
         <video controls class="w-full aspect-video bg-black" src="/v/{{.ID}}/video" poster="/v/{{.ID}}/thumb"></video>
       {{else if .HasAudio}}
-        <img src="/v/{{.ID}}/thumb" alt="" class="w-full aspect-video object-cover bg-base-300">
-        <audio controls class="w-full" src="/v/{{.ID}}/audio"></audio>
+        <img src="/v/{{.ID}}/thumb" alt="" class="w-full aspect-video object-cover bg-neutral-950">
+        <audio controls class="w-full bg-neutral-950" src="/v/{{.ID}}/audio"></audio>
       {{else}}
-        <div class="aspect-video flex items-center justify-center bg-base-300 text-base-content/50">Media unavailable.</div>
+        <div class="aspect-video flex items-center justify-center bg-neutral-950 text-neutral-600 font-display tracking-wider">MEDIA UNAVAILABLE</div>
       {{end}}
     </div>
 
-    <div class="card bg-base-100 border border-base-300 mt-4">
-      <div class="card-body">
-        <h3 class="font-semibold flex items-center gap-2">
-          <span>Export</span>
-        </h3>
-        <div class="flex flex-wrap gap-2">
-          <a class="btn btn-primary btn-sm" href="/v/{{.ID}}/export">⬇ Download MP4</a>
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('trim-ui').classList.toggle('hidden')">✂ Trim &amp; download</button>
-        </div>
-        <div id="trim-ui" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-          <label class="form-control">
-            <div class="label py-1"><span class="label-text text-xs">Start (s)</span></div>
-            <input type="range" id="trim-start" min="0" max="{{.DurationSec}}" value="0" class="range range-sm range-primary">
-          </label>
-          <label class="form-control">
-            <div class="label py-1"><span class="label-text text-xs">End (s)</span></div>
-            <input type="range" id="trim-end" min="0" max="{{.DurationSec}}" value="{{.DurationSec}}" class="range range-sm range-primary">
-          </label>
-          <button class="btn btn-primary btn-sm self-end" id="trim-go" data-id="{{.ID}}">Download clip</button>
-        </div>
+    <div class="rounded-2xl bg-neutral-900 border border-neutral-800 p-5">
+      <p class="text-xs uppercase tracking-widest text-neutral-500 font-semibold mb-3">Export for editing</p>
+      <div class="flex flex-wrap gap-2">
+        <a class="btn bg-yellow-400 hover:bg-yellow-300 text-black font-bold uppercase tracking-wider border-0 sq-press" href="/v/{{.ID}}/export">⬇ Download MP4</a>
+        <button class="btn btn-outline border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:border-neutral-700 font-semibold uppercase tracking-wider" onclick="document.getElementById('trim-ui').classList.toggle('hidden')">✂ Trim &amp; download</button>
+      </div>
+      <div id="trim-ui" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-neutral-800">
+        <label class="form-control">
+          <span class="text-[10px] text-neutral-500 uppercase tracking-widest mb-1">Start (s)</span>
+          <input type="range" id="trim-start" min="0" max="{{.DurationSec}}" value="0" class="range range-warning range-sm">
+        </label>
+        <label class="form-control">
+          <span class="text-[10px] text-neutral-500 uppercase tracking-widest mb-1">End (s)</span>
+          <input type="range" id="trim-end" min="0" max="{{.DurationSec}}" value="{{.DurationSec}}" class="range range-warning range-sm">
+        </label>
+        <button class="btn bg-yellow-400 hover:bg-yellow-300 text-black border-0 font-bold uppercase tracking-wider self-end" id="trim-go" data-id="{{.ID}}">Download clip</button>
       </div>
     </div>
   </div>
