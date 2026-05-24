@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"time"
 
 	"samqna/model"
@@ -34,7 +35,7 @@ func (r *JobRepo) Claim(workerID string) (*model.Job, error) {
 		var j model.Job
 		err := tx.Where("status = ? AND next_run_at <= ?", model.JobPending, time.Now()).
 			Order("id ASC").First(&j).Error
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil
 		}
 		if err != nil {
