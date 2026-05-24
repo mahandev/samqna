@@ -74,7 +74,7 @@ func CreateNewApp() (*App, error) {
 	// Pipeline
 	reg := pipeline.NewRegistry()
 	reg.Register(&pipeline.ExtractStage{Storage: st, FfmpegBin: cfg.FfmpegBin})
-	reg.Register(&pipeline.WhisperStage{Bin: cfg.WhisperBin, ModelPath: cfg.WhisperModel})
+	reg.Register(&pipeline.WhisperStage{Bin: cfg.WhisperBin, ModelPath: cfg.WhisperModel, FfmpegBin: cfg.FfmpegBin})
 	reg.Register(&pipeline.TagGradeStage{
 		Client:           &http.Client{Timeout: 30 * time.Second},
 		Endpoint:         "https://openrouter.ai/api/v1/chat/completions",
