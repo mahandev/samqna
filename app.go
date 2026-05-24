@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -39,6 +40,9 @@ func CreateNewApp() (*App, error) {
 	cfg, err := config.Load()
 	if err != nil {
 		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Dir(cfg.DatabasePath), 0o755); err != nil {
+		return nil, fmt.Errorf("create db dir: %w", err)
 	}
 	db, err := config.ConnectDB(cfg.DatabasePath)
 	if err != nil {
