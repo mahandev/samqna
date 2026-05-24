@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 )
@@ -66,10 +67,15 @@ func getenv(key, def string) string {
 }
 
 func getenvInt(key string, def int) int {
-	if v, ok := os.LookupEnv(key); ok && v != "" {
-		if n, err := strconv.Atoi(v); err == nil {
-			return n
-		}
+	v, ok := os.LookupEnv(key)
+	if !ok || v == "" {
+		return def
 	}
-	return def
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		slog.Warn("invalid integer env var, falling back to default",
+			"key", key, "value", v, "default", def, "err", err)
+		return def
+	}
+	return n
 }
