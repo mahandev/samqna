@@ -1,10 +1,14 @@
 {{define "list_fragment"}}{{template "list_inner" .}}{{end}}
 {{define "list_inner"}}
-<div class="card-grid">
+<div id="list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 {{range .Submissions}}
   {{template "card" .}}
 {{else}}
-  <p class="muted">No matching submissions.</p>
+  <div class="col-span-full">
+    <div class="alert bg-base-100 border border-base-300">
+      <span class="text-base-content/60">No submissions match the current filters. Try clearing them or <a href="/submit" class="link link-primary">be the first to ask</a>.</span>
+    </div>
+  </div>
 {{end}}
 </div>
 {{end}}

@@ -1,35 +1,58 @@
-{{define "title"}}Submit{{end}}
+{{define "title"}}Ask a question{{end}}
 {{define "content"}}
-<h1>Submit a question</h1>
-<p class="muted">≤ 60 seconds. By submitting, you agree your video will be publicly visible.</p>
-
-<form id="upload-form" action="/submit" method="post" enctype="multipart/form-data" class="stack">
-  <label>Optional email (notify if your question is answered)
-    <input type="email" name="email" autocomplete="email">
-  </label>
-
-  <div class="recorder">
-    <button type="button" id="rec-toggle" class="btn">● Record</button>
-    <video id="rec-preview" autoplay muted playsinline></video>
-    <div id="rec-timer" class="muted">0s / 60s</div>
+<div class="max-w-2xl mx-auto">
+  <div class="text-center mb-6">
+    <h1 class="text-3xl font-bold tracking-tight">Ask a question</h1>
+    <p class="text-base-content/70 mt-2">Record up to 60 seconds. Your video goes straight into the public feed for the creator to triage.</p>
   </div>
 
-  <label>Or upload an existing file
-    <input type="file" name="video" accept="video/*">
-  </label>
+  <form id="upload-form" action="/submit" method="post" enctype="multipart/form-data" class="card bg-base-100 border border-base-300">
+    <div class="card-body gap-5">
 
-  <label class="checkbox">
-    <input type="checkbox" name="consent" required>
-    I understand my submission will be publicly visible.
-  </label>
+      <div class="form-control">
+        <label class="label" for="email"><span class="label-text">Email (optional, for notifications)</span></label>
+        <input id="email" type="email" name="email" autocomplete="email" placeholder="you@example.com" class="input input-bordered w-full">
+      </div>
 
-  {{if .TurnstileSite}}
-  <div class="cf-turnstile" data-sitekey="{{.TurnstileSite}}"></div>
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-  {{end}}
+      <div class="form-control">
+        <label class="label"><span class="label-text font-medium">Record</span></label>
+        <div class="aspect-video bg-base-300 rounded-lg overflow-hidden mb-3 relative">
+          <video id="rec-preview" autoplay muted playsinline class="w-full h-full object-cover"></video>
+          <div id="rec-timer" class="absolute bottom-2 right-2 badge badge-neutral font-mono">0s / 60s</div>
+        </div>
+        <button type="button" id="rec-toggle" class="btn btn-error btn-block gap-2">
+          <span class="text-xl leading-none">●</span> Record
+        </button>
+      </div>
 
-  <button type="submit" class="btn primary">Submit</button>
-</form>
+      <div class="divider text-xs opacity-50">OR</div>
+
+      <div class="form-control">
+        <label class="label" for="file"><span class="label-text">Upload an existing file</span></label>
+        <input id="file" type="file" name="video" accept="video/*" class="file-input file-input-bordered w-full">
+      </div>
+
+      <label class="label cursor-pointer justify-start gap-3 bg-base-200 rounded-lg p-3">
+        <input type="checkbox" name="consent" required class="checkbox checkbox-primary checkbox-sm">
+        <span class="label-text">I understand my submission will be publicly visible.</span>
+      </label>
+
+      {{if .TurnstileSite}}
+      <div class="cf-turnstile self-center" data-sitekey="{{.TurnstileSite}}"></div>
+      <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+      {{end}}
+
+      <div id="upload-progress" class="hidden">
+        <div class="text-sm text-base-content/70 mb-1" id="upload-label">Uploading…</div>
+        <progress id="upload-bar" class="progress progress-primary w-full" value="0" max="100"></progress>
+      </div>
+
+      <button type="submit" id="submit-btn" class="btn btn-primary btn-block">Submit</button>
+    </div>
+  </form>
+
+  <p class="text-xs text-base-content/50 text-center mt-4">Powered by AI triage. Your video is transcribed, tagged, and quality-graded automatically.</p>
+</div>
 
 <script src="/static/recorder.js" defer></script>
 {{end}}

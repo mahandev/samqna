@@ -1,5 +1,11 @@
 {{define "status_fragment"}}
-<div id="status" class="status-{{.Status}}">
-  Status: {{.Status}}
+{{$cls := "badge-ghost"}}
+{{if eq .Status "ready"}}{{$cls = "badge-success"}}{{end}}
+{{if eq .Status "processing"}}{{$cls = "badge-warning"}}{{end}}
+{{if eq .Status "failed"}}{{$cls = "badge-error"}}{{end}}
+{{if eq .Status "quarantined"}}{{$cls = "badge-neutral"}}{{end}}
+<div id="status" class="badge {{$cls}} gap-1">
+  {{if eq .Status "processing"}}<span class="loading loading-spinner loading-xs"></span>{{end}}
+  {{.Status}}
 </div>
 {{end}}

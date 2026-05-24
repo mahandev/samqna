@@ -1,12 +1,31 @@
 {{define "card"}}
-<a href="/v/{{.ID}}" class="card">
-  <img src="/v/{{.ID}}/thumb" alt="" class="thumb">
-  <div class="card-body">
-    <div class="score">{{if .QualityScore}}{{.QualityScore}}{{else}}—{{end}}</div>
-    <div class="summary">{{if .Summary}}{{.Summary}}{{else}}(processing)…{{end}}</div>
-    <div class="tags">
-      {{range .Tags}}{{template "tag_chip" .Name}}{{end}}
+<div id="card-{{.ID}}"
+     class="card card-compact bg-base-100 border {{if .IsNew}}border-primary ring-2 ring-primary/40{{else}}border-base-300{{end}} hover:shadow-md transition-shadow {{if eq .Status "processing"}}sq-processing{{end}}"
+     {{if eq .Status "processing"}}hx-get="/v/{{.ID}}/card" hx-trigger="every 4s" hx-swap="outerHTML"{{end}}>
+  <a href="/v/{{.ID}}" class="block">
+    <figure class="aspect-video bg-base-300 overflow-hidden relative">
+      <img src="/v/{{.ID}}/thumb" alt="" class="w-full h-full object-cover">
+      {{if .IsNew}}
+        <span class="absolute top-2 left-2 badge badge-primary badge-sm shadow">Just submitted</span>
+      {{end}}
+      {{if eq .Status "processing"}}
+        <span class="absolute top-2 right-2 badge badge-warning badge-sm gap-1">
+          <span class="loading loading-spinner loading-xs"></span>processing
+        </span>
+      {{else if eq .Status "failed"}}
+        <span class="absolute top-2 right-2 badge badge-error badge-sm">failed</span>
+      {{else if .QualityScore}}
+        <span class="absolute top-2 right-2 badge badge-neutral badge-lg font-mono">{{.QualityScore}}</span>
+      {{end}}
+    </figure>
+    <div class="card-body">
+      <p class="text-base-content {{if not .Summary}}sq-placeholder italic text-base-content/50{{end}}">
+        {{if .Summary}}{{.Summary}}{{else}}Listening to the question…{{end}}
+      </p>
+      <div class="flex flex-wrap gap-1 mt-1">
+        {{range .Tags}}{{template "tag_chip" .Name}}{{end}}
+      </div>
     </div>
-  </div>
-</a>
+  </a>
+</div>
 {{end}}

@@ -31,11 +31,12 @@ func New() (*Renderer, error) {
 		files []string
 	}
 	defs := []pageDef{
-		{"landing", []string{"layout.html", "landing.html"}},
 		{"submit", []string{"layout.html", "submit.html"}},
 		{"dashboard", []string{"layout.html", "dashboard.html", "list_fragment.html", "components/card.html", "components/tag_chip.html"}},
-		{"video", []string{"layout.html", "video.html", "status_fragment.html", "components/tag_chip.html"}},
+		{"video", []string{"layout.html", "video.html", "live_fragment.html", "status_fragment.html", "components/tag_chip.html"}},
 		{"list_fragment", []string{"list_fragment.html", "components/card.html", "components/tag_chip.html"}},
+		{"card_fragment", []string{"components/card.html", "components/tag_chip.html"}},
+		{"live_fragment", []string{"live_fragment.html", "components/tag_chip.html"}},
 		{"status_fragment", []string{"status_fragment.html"}},
 	}
 	for _, d := range defs {
@@ -48,15 +49,22 @@ func New() (*Renderer, error) {
 	return &Renderer{pages: pages}, nil
 }
 
+// fragmentTemplates render themselves directly rather than via the "base" layout.
+var fragmentTemplates = map[string]string{
+	"list_fragment":   "list_fragment",
+	"status_fragment": "status_fragment",
+	"card_fragment":   "card",
+	"live_fragment":   "live_fragment",
+}
+
 func (r *Renderer) Render(w io.Writer, name string, data any) error {
 	tpl, ok := r.pages[name]
 	if !ok {
 		return errPageNotFound(name)
 	}
-	// Layout templates use "base"; fragments render themselves
 	root := "base"
-	if name == "list_fragment" || name == "status_fragment" {
-		root = name
+	if alt, ok := fragmentTemplates[name]; ok {
+		root = alt
 	}
 	return tpl.ExecuteTemplate(w, root, data)
 }

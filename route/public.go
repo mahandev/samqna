@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"samqna/config"
+	"samqna/model"
 	"samqna/repository"
 	"samqna/service"
 	"samqna/storage"
@@ -33,25 +34,33 @@ type Deps struct {
 	Storage     *storage.Storage
 	View        *view.Renderer
 	Submissions *service.Submissions
-	ExportSvc   *service.Export // wired in T18; nil OK for early route tests
+	ExportSvc   *service.Export
 }
 
 // RegisterPublic mounts all unauthenticated routes onto r.
 func RegisterPublic(r *gin.Engine, d *Deps) {
 	r.StaticFS("/static", http.Dir("static"))
 
-	r.GET("/", func(c *gin.Context) { render(c, d.View, "landing", gin.H{}) })
+	// Feed is the home page.
+	r.GET("/", func(c *gin.Context) { feedHandler(c, d, false) })
+	// Legacy /browse redirects to root so saved links still work.
+	r.GET("/browse", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/") })
+	// HTMX fragment endpoint used by the filter form for partial swaps.
+	r.GET("/browse/list", func(c *gin.Context) { feedHandler(c, d, true) })
+
 	r.GET("/submit", func(c *gin.Context) {
 		render(c, d.View, "submit", gin.H{"TurnstileSite": d.Cfg.TurnstileSite})
 	})
 	r.POST("/submit", func(c *gin.Context) { submitHandler(c, d) })
-	r.GET("/browse", func(c *gin.Context) { browseHandler(c, d, false) })
-	r.GET("/browse/list", func(c *gin.Context) { browseHandler(c, d, true) })
+
 	r.GET("/v/:id", func(c *gin.Context) { videoHandler(c, d) })
 	r.GET("/v/:id/status", func(c *gin.Context) { statusHandler(c, d) })
+	r.GET("/v/:id/live", func(c *gin.Context) { liveHandler(c, d) })
+	r.GET("/v/:id/card", func(c *gin.Context) { cardHandler(c, d) })
 	r.GET("/v/:id/thumb", func(c *gin.Context) { fileHandler(c, d, "thumb") })
 	r.GET("/v/:id/video", func(c *gin.Context) { fileHandler(c, d, "video") })
 	r.GET("/v/:id/audio", func(c *gin.Context) { fileHandler(c, d, "audio") })
+
 	r.GET("/tags", func(c *gin.Context) {
 		m, err := d.Tags.AllWithCounts()
 		if err != nil {
@@ -72,7 +81,8 @@ func RegisterPublic(r *gin.Engine, d *Deps) {
 	r.POST("/v/:id/export/trim", func(c *gin.Context) {
 		var body struct{ Start, End float64 }
 		if err := c.ShouldBindJSON(&body); err != nil {
-			c.AbortWithStatus(400); return
+			c.AbortWithStatus(400)
+			return
 		}
 		c.Header("Content-Type", "video/mp4")
 		c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="clip-%s.mp4"`, c.Param("id")))
@@ -81,9 +91,12 @@ func RegisterPublic(r *gin.Engine, d *Deps) {
 		}
 	})
 	r.POST("/export/batch", func(c *gin.Context) {
-		var body struct{ IDs []string `json:"ids"` }
+		var body struct {
+			IDs []string `json:"ids"`
+		}
 		if err := c.ShouldBindJSON(&body); err != nil || len(body.IDs) == 0 {
-			c.AbortWithStatus(400); return
+			c.AbortWithStatus(400)
+			return
 		}
 		c.Header("Content-Type", "application/zip")
 		c.Header("Content-Disposition", `attachment; filename="samqna-batch.zip"`)
@@ -100,8 +113,14 @@ func render(c *gin.Context, vw *view.Renderer, name string, data any) {
 	}
 }
 
+// wantsJSON returns true when the client prefers JSON (used to switch
+// submitHandler between redirect and JSON-with-redirect-target).
+func wantsJSON(c *gin.Context) bool {
+	a := c.GetHeader("Accept")
+	return strings.Contains(a, "application/json")
+}
+
 func submitHandler(c *gin.Context, d *Deps) {
-	// Parse multipart first so we can read both file and form fields uniformly.
 	if err := c.Request.ParseMultipartForm(32 << 20); err != nil {
 		c.String(http.StatusBadRequest, "Could not parse upload.")
 		return
@@ -122,7 +141,6 @@ func submitHandler(c *gin.Context, d *Deps) {
 		c.String(http.StatusTooManyRequests, "Daily submission limit reached.")
 		return
 	}
-	// Turnstile (best-effort)
 	if d.Cfg.TurnstileSecret != "" {
 		if !verifyTurnstile(d.Cfg.TurnstileSecret, c.Request.FormValue("cf-turnstile-response"), ip) {
 			c.String(http.StatusBadRequest, "Bot check failed.")
@@ -155,13 +173,54 @@ func submitHandler(c *gin.Context, d *Deps) {
 		c.String(http.StatusInternalServerError, "Server error.")
 		return
 	}
-	c.Redirect(http.StatusSeeOther, "/v/"+res.ID)
+
+	redirect := "/?new=" + res.ID
+	if wantsJSON(c) {
+		c.JSON(http.StatusOK, gin.H{"id": res.ID, "redirect": redirect})
+		return
+	}
+	c.Redirect(http.StatusSeeOther, redirect)
 }
 
-func browseHandler(c *gin.Context, d *Deps, fragment bool) {
+// View structs shared between feed and single-card endpoints — keeps GORM
+// models out of templates and gives us a stable shape for HTMX swaps.
+type tagView struct{ Name string }
+
+type subView struct {
+	ID           string
+	Summary      string
+	Transcript   string
+	QualityScore int
+	Status       string
+	Tags         []tagView
+	IsNew        bool
+}
+
+func flatten(s *model.Submission, newID string) subView {
+	tv := make([]tagView, 0, len(s.Tags))
+	for _, t := range s.Tags {
+		tv = append(tv, tagView{Name: t.Name})
+	}
+	score := 0
+	if s.QualityScore != nil {
+		score = *s.QualityScore
+	}
+	return subView{
+		ID:           s.ID,
+		Summary:      deref(s.Summary),
+		Transcript:   deref(s.Transcript),
+		QualityScore: score,
+		Status:       string(s.Status),
+		Tags:         tv,
+		IsNew:        s.ID == newID && newID != "",
+	}
+}
+
+func feedHandler(c *gin.Context, d *Deps, fragment bool) {
 	tags := c.QueryArray("tag")
 	minScore, _ := strconv.Atoi(c.DefaultQuery("min_score", "0"))
 	starred := c.Query("starred") == "1"
+	newID := c.Query("new")
 	subs, err := d.Subs.ListReady(repository.ListFilter{
 		Tags: tags, MinScore: minScore, StarredOnly: starred,
 		Limit: 50, Offset: 0,
@@ -170,31 +229,26 @@ func browseHandler(c *gin.Context, d *Deps, fragment bool) {
 		c.AbortWithStatus(500)
 		return
 	}
-	type tagView struct{ Name string }
-	type subView struct {
-		ID           string
-		Summary      string
-		QualityScore int
-		Tags         []tagView
+
+	// Include the just-submitted card (which is almost certainly still
+	// in processing state and therefore not returned by ListReady) so the
+	// user sees it immediately after redirect.
+	views := make([]subView, 0, len(subs)+1)
+	if newID != "" {
+		if extra, err := d.Subs.Get(newID); err == nil && extra.Status != model.StatusReady {
+			views = append(views, flatten(extra, newID))
+		}
 	}
-	views := make([]subView, 0, len(subs))
 	for _, s := range subs {
-		tv := make([]tagView, 0, len(s.Tags))
-		for _, t := range s.Tags {
-			tv = append(tv, tagView{Name: t.Name})
-		}
-		score := 0
-		if s.QualityScore != nil {
-			score = *s.QualityScore
-		}
-		views = append(views, subView{
-			ID: s.ID, Summary: deref(s.Summary), QualityScore: score, Tags: tv,
-		})
+		s := s
+		views = append(views, flatten(&s, newID))
 	}
+
 	data := gin.H{
 		"Submissions": views,
 		"MinScore":    minScore,
 		"StarredOnly": starred,
+		"NewID":       newID,
 	}
 	if fragment {
 		render(c, d.View, "list_fragment", data)
@@ -211,16 +265,17 @@ func videoHandler(c *gin.Context, d *Deps) {
 		c.AbortWithStatus(404)
 		return
 	}
-	type tagView struct{ Name string }
-	tags := make([]tagView, 0, len(s.Tags))
-	for _, t := range s.Tags {
-		tags = append(tags, tagView{Name: t.Name})
-	}
+	view := flatten(s, "")
 	render(c, d.View, "video", gin.H{
-		"ID": s.ID, "Status": string(s.Status), "Summary": deref(s.Summary),
-		"Transcript": deref(s.Transcript), "Tags": tags,
+		"ID":          view.ID,
+		"Status":      view.Status,
+		"Summary":     view.Summary,
+		"Transcript":  view.Transcript,
+		"Tags":        view.Tags,
+		"QualityScore": view.QualityScore,
 		"DurationSec": s.DurationSec,
-		"HasVideo":    s.VideoPath != nil, "HasAudio": s.AudioPath != "",
+		"HasVideo":    s.VideoPath != nil,
+		"HasAudio":    s.AudioPath != "",
 	})
 }
 
@@ -231,6 +286,32 @@ func statusHandler(c *gin.Context, d *Deps) {
 		return
 	}
 	render(c, d.View, "status_fragment", gin.H{"Status": string(s.Status)})
+}
+
+func liveHandler(c *gin.Context, d *Deps) {
+	s, err := d.Subs.Get(c.Param("id"))
+	if err != nil {
+		c.AbortWithStatus(404)
+		return
+	}
+	v := flatten(s, "")
+	render(c, d.View, "live_fragment", gin.H{
+		"ID":           v.ID,
+		"Status":       v.Status,
+		"Summary":      v.Summary,
+		"Transcript":   v.Transcript,
+		"Tags":         v.Tags,
+		"QualityScore": v.QualityScore,
+	})
+}
+
+func cardHandler(c *gin.Context, d *Deps) {
+	s, err := d.Subs.Get(c.Param("id"))
+	if err != nil {
+		c.AbortWithStatus(404)
+		return
+	}
+	render(c, d.View, "card_fragment", flatten(s, c.Query("new")))
 }
 
 func fileHandler(c *gin.Context, d *Deps, kind string) {
@@ -286,7 +367,6 @@ func verifyTurnstile(secret, token, ip string) bool {
 	client := &http.Client{Timeout: 3 * time.Second}
 	resp, err := client.PostForm("https://challenges.cloudflare.com/turnstile/v0/siteverify", form)
 	if err != nil {
-		// fall back to allowing — don't block legit users on Cloudflare hiccups
 		return true
 	}
 	defer resp.Body.Close()

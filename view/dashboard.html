@@ -1,22 +1,48 @@
 {{define "title"}}Browse{{end}}
 {{define "content"}}
-<h1>Submitted questions</h1>
-
-<form id="filters" hx-get="/browse/list" hx-target="#list" hx-trigger="change, keyup delay:300ms" hx-push-url="true" class="filters">
-  <div class="tag-cloud">
-    {{range $name, $count := .Tags}}
-      <label class="tag-chip">
-        <input type="checkbox" name="tag" value="{{$name}}">
-        {{$name}} <span class="count">{{$count}}</span>
-      </label>
-    {{end}}
+<section class="hero bg-base-100 rounded-2xl mb-6 border border-base-300">
+  <div class="hero-content text-center py-10">
+    <div class="max-w-2xl">
+      <h1 class="text-4xl font-bold tracking-tight">Q&amp;A — submitted by you, sorted by AI</h1>
+      <p class="py-3 text-base-content/70">Browse what others have asked, or <a href="/submit" class="link link-primary">record your own question</a>.</p>
+    </div>
   </div>
-  <label>Min quality
-    <input type="range" name="min_score" min="0" max="100" value="{{.MinScore}}">
-  </label>
-  <label class="checkbox">
-    <input type="checkbox" name="starred" value="1" {{if .StarredOnly}}checked{{end}}> Starred only
-  </label>
+</section>
+
+<form id="filters"
+      hx-get="/"
+      hx-target="#list"
+      hx-trigger="change, keyup delay:300ms"
+      hx-select="#list > *"
+      hx-push-url="true"
+      class="card bg-base-100 border border-base-300 mb-6">
+  <div class="card-body gap-4">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-sm font-medium text-base-content/60 mr-2">Tags:</span>
+      {{range $name, $count := .Tags}}
+        <label class="cursor-pointer">
+          <input type="checkbox" name="tag" value="{{$name}}" class="peer hidden">
+          <span class="badge badge-outline badge-lg peer-checked:badge-primary peer-checked:text-primary-content gap-1">
+            {{$name}} <span class="opacity-60">{{$count}}</span>
+          </span>
+        </label>
+      {{else}}
+        <span class="text-sm text-base-content/50 italic">No tags yet — submit a question to seed the list.</span>
+      {{end}}
+    </div>
+
+    <div class="flex flex-wrap items-center gap-6">
+      <label class="flex items-center gap-3 flex-1 min-w-[200px]">
+        <span class="text-sm font-medium text-base-content/60 whitespace-nowrap">Min quality</span>
+        <input type="range" name="min_score" min="0" max="100" value="{{.MinScore}}" class="range range-primary range-sm flex-1" oninput="this.nextElementSibling.value = this.value">
+        <output class="badge badge-ghost badge-sm w-10 text-center">{{.MinScore}}</output>
+      </label>
+      <label class="label cursor-pointer gap-2">
+        <input type="checkbox" name="starred" value="1" {{if .StarredOnly}}checked{{end}} class="checkbox checkbox-sm checkbox-primary">
+        <span class="label-text">Starred only</span>
+      </label>
+    </div>
+  </div>
 </form>
 
 <div id="list">

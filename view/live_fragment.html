@@ -1,0 +1,54 @@
+{{define "live_fragment"}}
+<section id="live"
+         {{if eq .Status "processing"}}hx-get="/v/{{.ID}}/live" hx-trigger="every 4s" hx-swap="outerHTML"{{end}}>
+  {{template "live_inner" .}}
+</section>
+{{end}}
+
+{{define "live_inner"}}
+<div class="card bg-base-100 border border-base-300">
+  <div class="card-body gap-4">
+    <div class="flex items-center justify-between">
+      <h2 class="card-title text-base">Status</h2>
+      {{$cls := "badge-ghost"}}
+      {{if eq .Status "ready"}}{{$cls = "badge-success"}}{{end}}
+      {{if eq .Status "processing"}}{{$cls = "badge-warning"}}{{end}}
+      {{if eq .Status "failed"}}{{$cls = "badge-error"}}{{end}}
+      {{if eq .Status "quarantined"}}{{$cls = "badge-neutral"}}{{end}}
+      <div class="badge {{$cls}} gap-1">
+        {{if eq .Status "processing"}}<span class="loading loading-spinner loading-xs"></span>{{end}}
+        {{.Status}}
+      </div>
+    </div>
+
+    <div>
+      <h3 class="font-semibold mb-1">Summary</h3>
+      <p class="text-sm {{if not .Summary}}sq-placeholder italic text-base-content/50{{end}}">
+        {{if .Summary}}{{.Summary}}{{else}}Working on it…{{end}}
+      </p>
+    </div>
+
+    {{if .QualityScore}}
+    <div>
+      <h3 class="font-semibold mb-1">Quality</h3>
+      <div class="flex items-center gap-2">
+        <progress class="progress progress-primary w-full" value="{{.QualityScore}}" max="100"></progress>
+        <span class="font-mono text-sm w-10 text-right">{{.QualityScore}}</span>
+      </div>
+    </div>
+    {{end}}
+
+    <div>
+      <h3 class="font-semibold mb-1">Tags</h3>
+      <div class="flex flex-wrap gap-1">
+        {{range .Tags}}{{template "tag_chip" .Name}}{{else}}<span class="text-xs text-base-content/50 italic">no tags yet</span>{{end}}
+      </div>
+    </div>
+
+    <div>
+      <h3 class="font-semibold mb-1">Transcript</h3>
+      <pre class="text-sm whitespace-pre-wrap bg-base-200 rounded p-3 max-h-64 overflow-auto {{if not .Transcript}}sq-placeholder italic text-base-content/50{{end}}">{{if .Transcript}}{{.Transcript}}{{else}}Listening…{{end}}</pre>
+    </div>
+  </div>
+</div>
+{{end}}

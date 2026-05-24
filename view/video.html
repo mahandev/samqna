@@ -1,36 +1,49 @@
 {{define "title"}}{{if .Summary}}{{.Summary}}{{else}}Submission{{end}}{{end}}
 {{define "content"}}
-<article class="video-page">
-  <div class="player">
-    {{if .HasVideo}}
-      <video controls src="/v/{{.ID}}/video" poster="/v/{{.ID}}/thumb"></video>
-    {{else if .HasAudio}}
-      <img src="/v/{{.ID}}/thumb" alt="" class="thumb-large">
-      <audio controls src="/v/{{.ID}}/audio"></audio>
-    {{else}}
-      <p class="muted">Media unavailable.</p>
-    {{end}}
+<a href="/" class="btn btn-sm btn-ghost mb-4 gap-1">← Back to feed</a>
+
+<article class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+  <div class="lg:col-span-3">
+    <div class="card bg-base-100 border border-base-300 overflow-hidden">
+      {{if .HasVideo}}
+        <video controls class="w-full aspect-video bg-black" src="/v/{{.ID}}/video" poster="/v/{{.ID}}/thumb"></video>
+      {{else if .HasAudio}}
+        <img src="/v/{{.ID}}/thumb" alt="" class="w-full aspect-video object-cover bg-base-300">
+        <audio controls class="w-full" src="/v/{{.ID}}/audio"></audio>
+      {{else}}
+        <div class="aspect-video flex items-center justify-center bg-base-300 text-base-content/50">Media unavailable.</div>
+      {{end}}
+    </div>
+
+    <div class="card bg-base-100 border border-base-300 mt-4">
+      <div class="card-body">
+        <h3 class="font-semibold flex items-center gap-2">
+          <span>Export</span>
+        </h3>
+        <div class="flex flex-wrap gap-2">
+          <a class="btn btn-primary btn-sm" href="/v/{{.ID}}/export">⬇ Download MP4</a>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('trim-ui').classList.toggle('hidden')">✂ Trim &amp; download</button>
+        </div>
+        <div id="trim-ui" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+          <label class="form-control">
+            <div class="label py-1"><span class="label-text text-xs">Start (s)</span></div>
+            <input type="range" id="trim-start" min="0" max="{{.DurationSec}}" value="0" class="range range-sm range-primary">
+          </label>
+          <label class="form-control">
+            <div class="label py-1"><span class="label-text text-xs">End (s)</span></div>
+            <input type="range" id="trim-end" min="0" max="{{.DurationSec}}" value="{{.DurationSec}}" class="range range-sm range-primary">
+          </label>
+          <button class="btn btn-primary btn-sm self-end" id="trim-go" data-id="{{.ID}}">Download clip</button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <aside>
-    <div id="status" hx-get="/v/{{.ID}}/status" hx-trigger="every 2s" hx-swap="outerHTML">
-      {{template "status_fragment" .}}
-    </div>
-    <h2>Summary</h2>
-    <p>{{if .Summary}}{{.Summary}}{{else}}(processing)…{{end}}</p>
-    <h2>Transcript</h2>
-    <pre class="transcript">{{if .Transcript}}{{.Transcript}}{{else}}(processing)…{{end}}</pre>
-    <h2>Tags</h2>
-    <div class="tags">{{range .Tags}}{{template "tag_chip" .Name}}{{end}}</div>
-    <div class="exports">
-      <a class="btn primary" href="/v/{{.ID}}/export">Download MP4</a>
-      <button class="btn" onclick="document.getElementById('trim-ui').hidden = false">Trim &amp; download</button>
-    </div>
-    <div id="trim-ui" hidden>
-      <label>Start <input type="range" id="trim-start" min="0" max="{{.DurationSec}}" value="0"></label>
-      <label>End <input type="range" id="trim-end" min="0" max="{{.DurationSec}}" value="{{.DurationSec}}"></label>
-      <button class="btn" id="trim-go" data-id="{{.ID}}">Download trim</button>
-    </div>
+  <aside class="lg:col-span-2 space-y-4">
+    <section id="live"
+             {{if eq .Status "processing"}}hx-get="/v/{{.ID}}/live" hx-trigger="every 4s" hx-swap="outerHTML"{{end}}>
+      {{template "live_inner" .}}
+    </section>
   </aside>
 </article>
 <script src="/static/trim.js" defer></script>
