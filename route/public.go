@@ -3,6 +3,7 @@ package route
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -60,6 +61,36 @@ func RegisterPublic(r *gin.Engine, d *Deps) {
 		c.JSON(200, m)
 	})
 	r.GET("/healthz", func(c *gin.Context) { healthHandler(c, d) })
+
+	r.GET("/v/:id/export", func(c *gin.Context) {
+		c.Header("Content-Type", "video/mp4")
+		c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="clip-%s.mp4"`, c.Param("id")))
+		if err := d.ExportSvc.OneClick(c.Request.Context(), c.Param("id"), c.Writer); err != nil {
+			_ = c.AbortWithError(500, err)
+		}
+	})
+	r.POST("/v/:id/export/trim", func(c *gin.Context) {
+		var body struct{ Start, End float64 }
+		if err := c.ShouldBindJSON(&body); err != nil {
+			c.AbortWithStatus(400); return
+		}
+		c.Header("Content-Type", "video/mp4")
+		c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="clip-%s.mp4"`, c.Param("id")))
+		if err := d.ExportSvc.Trim(c.Request.Context(), c.Param("id"), body.Start, body.End, c.Writer); err != nil {
+			_ = c.AbortWithError(500, err)
+		}
+	})
+	r.POST("/export/batch", func(c *gin.Context) {
+		var body struct{ IDs []string `json:"ids"` }
+		if err := c.ShouldBindJSON(&body); err != nil || len(body.IDs) == 0 {
+			c.AbortWithStatus(400); return
+		}
+		c.Header("Content-Type", "application/zip")
+		c.Header("Content-Disposition", `attachment; filename="samqna-batch.zip"`)
+		if err := d.ExportSvc.BatchZip(c.Request.Context(), body.IDs, c.Writer); err != nil {
+			_ = c.AbortWithError(500, err)
+		}
+	})
 }
 
 func render(c *gin.Context, vw *view.Renderer, name string, data any) {
