@@ -9,13 +9,15 @@ RUN go build -o /out/samqna .
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg ca-certificates curl libgomp1 build-essential git \
+    ffmpeg ca-certificates curl libgomp1 build-essential cmake git \
     && rm -rf /var/lib/apt/lists/*
 
 # Build whisper.cpp from source (more reliable than prebuilt binaries across platforms)
 RUN git clone --depth 1 --branch v1.7.4 https://github.com/ggerganov/whisper.cpp /tmp/whisper \
-    && cd /tmp/whisper && make -j$(nproc) \
-    && cp /tmp/whisper/main /usr/local/bin/whisper-cli \
+    && cd /tmp/whisper \
+    && cmake -B build -DGGML_NATIVE=OFF -DBUILD_SHARED_LIBS=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON \
+    && cmake --build build -j$(nproc) --target whisper-cli \
+    && cp /tmp/whisper/build/bin/whisper-cli /usr/local/bin/whisper-cli \
     && rm -rf /tmp/whisper
 
 # Download the small.en model (~466 MB) — baked into image so containers start ready
