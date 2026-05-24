@@ -143,6 +143,9 @@ func (p *Pool) tick(workerID string) {
 		logger.Info("submission ready")
 		return
 	}
+	if err := p.sr.Update(sub); err != nil {
+		logger.Error("persist submission between stages", "err", err)
+	}
 	if err := p.jr.AdvanceStage(job.ID, model.JobStage(res.NextStage)); err != nil {
 		logger.Error("advance stage", "err", err)
 	}
