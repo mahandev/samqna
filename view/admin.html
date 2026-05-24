@@ -1,0 +1,144 @@
+{{define "title"}}Admin{{end}}
+{{define "content"}}
+
+<div class="mb-8 flex items-end justify-between">
+  <div>
+    <p class="text-xs uppercase tracking-[0.3em] text-yellow-400 font-semibold mb-2">Signed in as {{.Actor}}</p>
+    <h1 class="font-display text-4xl sm:text-5xl tracking-wide leading-none">CONTROL ROOM</h1>
+  </div>
+  <a href="/" class="text-neutral-500 hover:text-neutral-300 text-xs uppercase tracking-widest font-semibold">← Feed</a>
+</div>
+
+<!-- HEALTH STRIP -->
+<section class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+  <div class="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
+    <p class="text-[10px] uppercase tracking-widest text-neutral-500">Queue</p>
+    <p class="sq-score text-3xl text-yellow-400 mt-1">{{.QueueDepth}}</p>
+    <p class="text-xs text-neutral-500">pending jobs</p>
+  </div>
+  <div class="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
+    <p class="text-[10px] uppercase tracking-widest text-neutral-500">Quarantined</p>
+    <p class="sq-score text-3xl text-amber-400 mt-1">{{len .Quarantined}}</p>
+    <p class="text-xs text-neutral-500">awaiting review</p>
+  </div>
+  <div class="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
+    <p class="text-[10px] uppercase tracking-widest text-neutral-500">Blocked IPs</p>
+    <p class="sq-score text-3xl text-red-400 mt-1">{{len .Blocked}}</p>
+    <p class="text-xs text-neutral-500">never get through</p>
+  </div>
+  <div class="rounded-xl bg-neutral-900 border {{if .Paused}}border-red-500{{else}}border-lime-500/40{{end}} p-4">
+    <p class="text-[10px] uppercase tracking-widest text-neutral-500">Intake</p>
+    <p class="font-display text-2xl tracking-wide mt-1 {{if .Paused}}text-red-400{{else}}text-lime-400{{end}}">{{if .Paused}}PAUSED{{else}}OPEN{{end}}</p>
+    <div class="mt-2">
+      {{if .Paused}}
+        <button class="btn btn-xs bg-lime-500 hover:bg-lime-400 text-black border-0 font-bold uppercase"
+                hx-post="/admin/unpause" hx-headers='{"X-Confirm":"yes"}' hx-swap="none"
+                hx-on::after-request="location.reload()">Resume</button>
+      {{else}}
+        <button class="btn btn-xs bg-red-600 hover:bg-red-500 text-white border-0 font-bold uppercase"
+                hx-post="/admin/pause" hx-headers='{"X-Confirm":"yes"}' hx-swap="none"
+                hx-confirm="Pause all incoming submissions?"
+                hx-on::after-request="location.reload()">Pause intake</button>
+      {{end}}
+    </div>
+  </div>
+</section>
+
+<!-- QUARANTINE -->
+<section class="mb-10">
+  <h2 class="font-display text-2xl tracking-wider mb-3">QUARANTINE QUEUE <span class="text-neutral-600 text-base">({{len .Quarantined}})</span></h2>
+  {{if .Quarantined}}
+    <div class="rounded-xl bg-neutral-900 border border-neutral-800 divide-y divide-neutral-800">
+      {{range .Quarantined}}
+        <div class="p-4 flex items-center gap-4">
+          <img src="/v/{{.ID}}/thumb" alt="" class="w-20 h-12 object-cover rounded bg-neutral-950 shrink-0">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-neutral-100 truncate">{{if .Summary}}{{.Summary}}{{else}}(no summary){{end}}</p>
+            <p class="text-xs text-neutral-500 truncate font-mono">{{.ID}} · {{.SubmitterIP}}{{if .SpamReason}} · {{.SpamReason}}{{end}}</p>
+          </div>
+          <div class="flex gap-2 shrink-0">
+            <a href="/v/{{.ID}}" class="btn btn-xs btn-ghost text-neutral-300">View</a>
+            <button class="btn btn-xs bg-lime-500 text-black border-0 font-bold uppercase"
+                    hx-post="/admin/v/{{.ID}}/quarantine?on=0" hx-headers='{"X-Confirm":"yes"}' hx-swap="none"
+                    hx-on::after-request="this.closest('.p-4').remove()">Restore</button>
+            <button class="btn btn-xs bg-red-600 text-white border-0 font-bold uppercase"
+                    hx-post="/admin/v/{{.ID}}/delete" hx-headers='{"X-Confirm":"yes"}' hx-swap="none"
+                    hx-confirm="Delete permanently?"
+                    hx-on::after-request="this.closest('.p-4').remove()">Delete</button>
+          </div>
+        </div>
+      {{end}}
+    </div>
+  {{else}}
+    <p class="text-neutral-500 italic">Nothing in quarantine.</p>
+  {{end}}
+</section>
+
+<!-- BLOCKED IPs -->
+<section class="mb-10">
+  <h2 class="font-display text-2xl tracking-wider mb-3">BLOCKED IPS <span class="text-neutral-600 text-base">({{len .Blocked}})</span></h2>
+  {{if .Blocked}}
+    <div class="rounded-xl bg-neutral-900 border border-neutral-800 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-neutral-950 text-[10px] uppercase tracking-widest text-neutral-500">
+          <tr>
+            <th class="text-left p-3">IP</th>
+            <th class="text-left p-3">Reason</th>
+            <th class="text-left p-3">When</th>
+            <th class="text-right p-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-800">
+          {{range .Blocked}}
+            <tr>
+              <td class="p-3 font-mono text-neutral-200">{{.IP}}</td>
+              <td class="p-3 text-neutral-400">{{if .Reason}}{{.Reason}}{{else}}—{{end}}</td>
+              <td class="p-3 text-neutral-500 text-xs">{{.BlockedAt.Format "2006-01-02 15:04"}}</td>
+              <td class="p-3 text-right">
+                <button class="btn btn-xs btn-ghost text-lime-400"
+                        hx-post="/admin/unblock-ip" hx-headers='{"X-Confirm":"yes","Content-Type":"application/json"}'
+                        hx-vals='{"ip":"{{.IP}}"}' hx-swap="none"
+                        hx-on::after-request="this.closest('tr').remove()">Unblock</button>
+              </td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <p class="text-neutral-500 italic">No blocks. Clean inbox.</p>
+  {{end}}
+</section>
+
+<!-- AUDIT LOG -->
+<section>
+  <h2 class="font-display text-2xl tracking-wider mb-3">AUDIT LOG <span class="text-neutral-600 text-base">(last {{len .Audits}})</span></h2>
+  {{if .Audits}}
+    <div class="rounded-xl bg-neutral-900 border border-neutral-800 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-neutral-950 text-[10px] uppercase tracking-widest text-neutral-500">
+          <tr>
+            <th class="text-left p-3">When</th>
+            <th class="text-left p-3">Actor</th>
+            <th class="text-left p-3">Action</th>
+            <th class="text-left p-3">Target</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-800">
+          {{range .Audits}}
+            <tr>
+              <td class="p-3 text-neutral-500 text-xs font-mono">{{.TS.Format "01-02 15:04:05"}}</td>
+              <td class="p-3 text-neutral-300">{{.Actor}}</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-neutral-800 text-yellow-400 text-xs font-mono">{{.Action}}</span></td>
+              <td class="p-3 font-mono text-neutral-400 text-xs">{{.Target}}</td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <p class="text-neutral-500 italic">No actions logged yet.</p>
+  {{end}}
+</section>
+
+{{end}}

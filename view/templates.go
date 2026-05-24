@@ -32,12 +32,13 @@ func New() (*Renderer, error) {
 	}
 	defs := []pageDef{
 		{"submit", []string{"layout.html", "submit.html"}},
-		{"dashboard", []string{"layout.html", "dashboard.html", "list_fragment.html", "components/card.html", "components/tag_chip.html"}},
+		{"dashboard", []string{"layout.html", "dashboard.html", "list_fragment.html", "components/card.html", "components/tag_chip.html", "components/admin_actions.html"}},
 		{"video", []string{"layout.html", "video.html", "live_fragment.html", "status_fragment.html", "components/tag_chip.html"}},
-		{"list_fragment", []string{"list_fragment.html", "components/card.html", "components/tag_chip.html"}},
-		{"card_fragment", []string{"components/card.html", "components/tag_chip.html"}},
+		{"list_fragment", []string{"list_fragment.html", "components/card.html", "components/tag_chip.html", "components/admin_actions.html"}},
+		{"card_fragment", []string{"components/card.html", "components/tag_chip.html", "components/admin_actions.html"}},
 		{"live_fragment", []string{"live_fragment.html", "components/tag_chip.html"}},
 		{"status_fragment", []string{"status_fragment.html"}},
+		{"admin", []string{"layout.html", "admin.html"}},
 	}
 	for _, d := range defs {
 		t, err := parse(d.files...)

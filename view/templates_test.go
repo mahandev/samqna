@@ -26,6 +26,7 @@ func TestAllPagesRender(t *testing.T) {
 		Status       string
 		Tags         []tag
 		IsNew        bool
+		IsAdmin      bool
 	}
 
 	cases := []struct {
@@ -84,6 +85,7 @@ func TestCardFragment_OmitsPollerWhenReady(t *testing.T) {
 		Status       string
 		Tags         []tag
 		IsNew        bool
+		IsAdmin      bool
 	}
 
 	procBuf := &bytes.Buffer{}

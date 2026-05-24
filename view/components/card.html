@@ -42,5 +42,6 @@
       </div>
     </div>
   </a>
+  {{if .IsAdmin}}{{template "admin_actions" .}}{{end}}
 </div>
 {{end}}

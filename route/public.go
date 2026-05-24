@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"samqna/auth"
 	"samqna/config"
 	"samqna/model"
 	"samqna/repository"
@@ -35,6 +36,8 @@ type Deps struct {
 	View        *view.Renderer
 	Submissions *service.Submissions
 	ExportSvc   *service.Export
+	AdminSvc    *service.Admin
+	CFAccess    *auth.Verifier
 }
 
 // RegisterPublic mounts all unauthenticated routes onto r.
@@ -120,7 +123,25 @@ func wantsJSON(c *gin.Context) bool {
 	return strings.Contains(a, "application/json")
 }
 
+// isAdmin checks whether the current request carries a valid Cloudflare
+// Access JWT (i.e. the user is signed in as the creator). The public
+// pages stay readable to everyone — admin status only controls whether
+// the inline manage buttons render.
+func isAdmin(c *gin.Context, d *Deps) bool {
+	if d.CFAccess == nil || !d.CFAccess.Enabled() {
+		return false
+	}
+	raw := c.GetHeader("Cf-Access-Jwt-Assertion")
+	_, ok := d.CFAccess.ValidEmail(raw)
+	return ok
+}
+
 func submitHandler(c *gin.Context, d *Deps) {
+	// Global kill switch: admin paused submissions.
+	if d.AdminSvc != nil && d.AdminSvc.IsPaused() {
+		c.String(http.StatusServiceUnavailable, "Submissions temporarily paused. Try again later.")
+		return
+	}
 	if err := c.Request.ParseMultipartForm(32 << 20); err != nil {
 		c.String(http.StatusBadRequest, "Could not parse upload.")
 		return
@@ -194,6 +215,7 @@ type subView struct {
 	Status       string
 	Tags         []tagView
 	IsNew        bool
+	IsAdmin      bool
 }
 
 func flatten(s *model.Submission, newID string) subView {
@@ -221,6 +243,7 @@ func feedHandler(c *gin.Context, d *Deps, fragment bool) {
 	minScore, _ := strconv.Atoi(c.DefaultQuery("min_score", "0"))
 	starred := c.Query("starred") == "1"
 	newID := c.Query("new")
+	admin := isAdmin(c, d)
 	subs, err := d.Subs.ListReady(repository.ListFilter{
 		Tags: tags, MinScore: minScore, StarredOnly: starred,
 		Limit: 50, Offset: 0,
@@ -230,18 +253,19 @@ func feedHandler(c *gin.Context, d *Deps, fragment bool) {
 		return
 	}
 
-	// Include the just-submitted card (which is almost certainly still
-	// in processing state and therefore not returned by ListReady) so the
-	// user sees it immediately after redirect.
 	views := make([]subView, 0, len(subs)+1)
 	if newID != "" {
 		if extra, err := d.Subs.Get(newID); err == nil && extra.Status != model.StatusReady {
-			views = append(views, flatten(extra, newID))
+			v := flatten(extra, newID)
+			v.IsAdmin = admin
+			views = append(views, v)
 		}
 	}
 	for _, s := range subs {
 		s := s
-		views = append(views, flatten(&s, newID))
+		v := flatten(&s, newID)
+		v.IsAdmin = admin
+		views = append(views, v)
 	}
 
 	data := gin.H{
@@ -249,6 +273,7 @@ func feedHandler(c *gin.Context, d *Deps, fragment bool) {
 		"MinScore":    minScore,
 		"StarredOnly": starred,
 		"NewID":       newID,
+		"IsAdmin":     admin,
 	}
 	if fragment {
 		render(c, d.View, "list_fragment", data)
@@ -311,7 +336,9 @@ func cardHandler(c *gin.Context, d *Deps) {
 		c.AbortWithStatus(404)
 		return
 	}
-	render(c, d.View, "card_fragment", flatten(s, c.Query("new")))
+	v := flatten(s, c.Query("new"))
+	v.IsAdmin = isAdmin(c, d)
+	render(c, d.View, "card_fragment", v)
 }
 
 func fileHandler(c *gin.Context, d *Deps, kind string) {

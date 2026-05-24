@@ -1,0 +1,30 @@
+{{define "admin_actions"}}
+<div class="flex items-center gap-1 px-3 pb-3 border-t border-neutral-800 pt-2" onclick="event.stopPropagation()">
+  <button title="Star / unstar"
+          class="btn btn-xs btn-ghost text-yellow-400 hover:bg-yellow-400/10"
+          hx-post="/admin/v/{{.ID}}/star"
+          hx-headers='{"X-Confirm":"yes"}'
+          hx-target="#card-{{.ID}}"
+          hx-swap="outerHTML">★</button>
+  <button title="Requeue pipeline"
+          class="btn btn-xs btn-ghost text-neutral-300 hover:bg-neutral-800"
+          hx-post="/admin/v/{{.ID}}/requeue"
+          hx-headers='{"X-Confirm":"yes"}'
+          hx-target="#card-{{.ID}}"
+          hx-swap="outerHTML">🔁</button>
+  <button title="Quarantine / restore"
+          class="btn btn-xs btn-ghost text-amber-400 hover:bg-amber-400/10"
+          hx-post="/admin/v/{{.ID}}/quarantine?on=1"
+          hx-headers='{"X-Confirm":"yes"}'
+          hx-target="#card-{{.ID}}"
+          hx-swap="outerHTML">🚫</button>
+  <div class="flex-1"></div>
+  <button title="Delete (soft)"
+          class="btn btn-xs btn-ghost text-red-400 hover:bg-red-500/10"
+          hx-post="/admin/v/{{.ID}}/delete"
+          hx-confirm="Delete this submission? (soft delete — recoverable from DB)"
+          hx-headers='{"X-Confirm":"yes"}'
+          hx-target="#card-{{.ID}}"
+          hx-swap="outerHTML">🗑</button>
+</div>
+{{end}}

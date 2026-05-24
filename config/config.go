@@ -30,6 +30,12 @@ type Config struct {
 	MaxIPPerDay      int
 	MaxUploadBytes   int64
 	RetentionDays    int
+
+	// CFAccessTeamDomain + CFAccessAUD enable Cloudflare Access verification
+	// for /admin*. Leave both empty for local dev — the static X-Admin-Token
+	// header is the only remaining path in that mode.
+	CFAccessTeamDomain string
+	CFAccessAUD        string
 }
 
 func Load() (*Config, error) {
@@ -50,8 +56,10 @@ func Load() (*Config, error) {
 		FfmpegBin:        getenv("FFMPEG_BIN", "/usr/bin/ffmpeg"),
 		QualityThreshold: getenvInt("QUALITY_THRESHOLD", 30),
 		MaxIPPerDay:      getenvInt("MAX_SUBMISSIONS_PER_IP_PER_DAY", 3),
-		MaxUploadBytes:   int64(getenvInt("MAX_UPLOAD_BYTES", 52428800)),
-		RetentionDays:    getenvInt("RETENTION_DAYS", 30),
+		MaxUploadBytes:     int64(getenvInt("MAX_UPLOAD_BYTES", 52428800)),
+		RetentionDays:      getenvInt("RETENTION_DAYS", 30),
+		CFAccessTeamDomain: os.Getenv("CF_ACCESS_TEAM_DOMAIN"),
+		CFAccessAUD:        os.Getenv("CF_ACCESS_AUD"),
 	}
 	if c.AdminToken == "" {
 		return nil, fmt.Errorf("ADMIN_TOKEN env var is required")

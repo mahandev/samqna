@@ -30,3 +30,7 @@ func (r *IPRepo) List() ([]model.BlockedIP, error) {
 	var out []model.BlockedIP
 	return out, r.DB.Order("blocked_at DESC").Find(&out).Error
 }
+
+func (r *IPRepo) Unblock(ip string) error {
+	return r.DB.Delete(&model.BlockedIP{}, "ip = ?", ip).Error
+}

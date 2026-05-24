@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"samqna/auth"
 	"samqna/config"
 	"samqna/migrations"
 	"samqna/model"
@@ -95,6 +96,28 @@ func CreateNewApp() (*App, error) {
 	pruner := pipeline.NewPruner(subRepo, st, cfg.RetentionDays)
 	n := notify.New()
 
+	auditRepo := repository.NewAuditRepo(db)
+	settingsRepo := repository.NewSettingsRepo(db)
+	adminSvc := &service.Admin{
+		DB: db,
+		Subs: subRepo, Jobs: jobRepo, Tags: tagRepo, IPs: ipRepo,
+		Audits: auditRepo, Settings: settingsRepo,
+		Notify: func(msg string) { _ = n.Send(msg) },
+	}
+
+	cfVerifier, err := auth.New(context.Background(), cfg.CFAccessTeamDomain, cfg.CFAccessAUD)
+	if err != nil {
+		// JWKS fetch failure at startup is loud on purpose — degrades to
+		// "no Cloudflare Access" rather than silently disabling auth.
+		slog.Error("cloudflare access verifier disabled", "err", err)
+		cfVerifier = nil
+	}
+	if cfVerifier == nil {
+		slog.Info("CF Access disabled (no team domain / aud) — admin via X-Admin-Token only")
+	} else {
+		slog.Info("CF Access enabled", "team", cfg.CFAccessTeamDomain)
+	}
+
 	router := gin.New()
 	router.Use(gin.Recovery(), slogMiddleware())
 	deps := &route.Deps{
@@ -102,6 +125,7 @@ func CreateNewApp() (*App, error) {
 		Subs: subRepo, Jobs: jobRepo, Tags: tagRepo, IPs: ipRepo,
 		Storage: st, View: vw,
 		Submissions: subSvc, ExportSvc: exportSvc,
+		AdminSvc: adminSvc, CFAccess: cfVerifier,
 	}
 	route.RegisterPublic(router, deps)
 	route.RegisterAdmin(router, deps)
