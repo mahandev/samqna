@@ -26,8 +26,10 @@ type Pool struct {
 	// Used in tests to drive retries fast.
 	backoffOverride time.Duration
 
-	wg   sync.WaitGroup
-	stop chan struct{}
+	wg     sync.WaitGroup
+	stop   chan struct{}
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 func NewPool(db *gorm.DB, sr *repository.SubmissionRepo, jr *repository.JobRepo, reg *Registry, workers int, poll time.Duration, maxAttempts int) *Pool {
@@ -39,6 +41,7 @@ func NewPool(db *gorm.DB, sr *repository.SubmissionRepo, jr *repository.JobRepo,
 }
 
 func (p *Pool) Start() {
+	p.ctx, p.cancel = context.WithCancel(context.Background())
 	for i := 0; i < p.workers; i++ {
 		p.wg.Add(1)
 		go p.workerLoop(fmt.Sprintf("w%d", i))
@@ -46,6 +49,9 @@ func (p *Pool) Start() {
 }
 
 func (p *Pool) Stop(timeout time.Duration) {
+	if p.cancel != nil {
+		p.cancel()
+	}
 	close(p.stop)
 	done := make(chan struct{})
 	go func() { p.wg.Wait(); close(done) }()
@@ -96,43 +102,49 @@ func (p *Pool) tick(workerID string) {
 	logger := slog.With("submission_id", sub.ID, "job_id", job.ID, "stage", job.Stage, "attempt", job.Attempts+1, "worker", workerID)
 	logger.Info("stage start")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(p.ctx, 5*time.Minute)
 	defer cancel()
 	res := RunStage(ctx, stage, sub)
 
 	if res.Err != nil {
 		logger.Warn("stage failed", "err", res.Err)
 		if job.Attempts+1 >= p.maxAttempts {
-			_ = p.jr.MarkPermanentFailure(job.ID, res.Err.Error())
+			if err := p.jr.MarkPermanentFailure(job.ID, res.Err.Error()); err != nil {
+				logger.Error("mark permanent failure", "err", err)
+			}
 			sub.Status = model.StatusFailed
-			_ = p.sr.Update(sub)
+			if err := p.sr.Update(sub); err != nil {
+				logger.Error("update submission to failed", "err", err)
+			}
 			logger.Error("permanent failure")
 			return
 		}
 		if p.backoffOverride > 0 {
-			// fast path for tests
-			_ = p.db.Model(&model.Job{}).Where("id = ?", job.ID).Updates(map[string]any{
-				"attempts":    job.Attempts + 1,
-				"last_error":  res.Err.Error(),
-				"status":      model.JobPending,
-				"locked_by":   nil,
-				"locked_at":   nil,
-				"next_run_at": time.Now().Add(p.backoffOverride),
-			}).Error
+			if err := p.jr.RecordFailureWithBackoff(job.ID, res.Err.Error(), p.backoffOverride); err != nil {
+				logger.Error("record failure (override)", "err", err)
+			}
 			return
 		}
-		_ = p.jr.RecordFailure(job.ID, res.Err.Error())
+		if err := p.jr.RecordFailure(job.ID, res.Err.Error()); err != nil {
+			logger.Error("record failure", "err", err)
+		}
 		return
 	}
 	if res.Terminal {
 		if sub.Status != model.StatusQuarantined {
 			sub.Status = model.StatusReady
-			_ = p.sr.Update(sub)
+			if err := p.sr.Update(sub); err != nil {
+				logger.Error("update submission to ready", "err", err)
+			}
 		}
-		_ = p.jr.Complete(job.ID)
+		if err := p.jr.Complete(job.ID); err != nil {
+			logger.Error("complete job", "err", err)
+		}
 		logger.Info("submission ready")
 		return
 	}
-	_ = p.jr.AdvanceStage(job.ID, model.JobStage(res.NextStage))
+	if err := p.jr.AdvanceStage(job.ID, model.JobStage(res.NextStage)); err != nil {
+		logger.Error("advance stage", "err", err)
+	}
 	logger.Info("stage advanced", "next", res.NextStage)
 }

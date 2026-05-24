@@ -92,3 +92,20 @@ func TestCanonicalize(t *testing.T) {
 	want := []string{"ai", "first-job", "career", "c"}
 	require.Equal(t, want, got)
 }
+
+func TestJobs_RecordFailureWithBackoff(t *testing.T) {
+	db := newTestDB(t)
+	sr := NewSubmissionRepo(db)
+	jr := NewJobRepo(db)
+	s := &model.Submission{ID: model.NewSubmissionID(), CreatedAt: time.Now(), SubmitterIP: "x", AudioPath: "/x", Status: model.StatusProcessing}
+	require.NoError(t, sr.Create(s))
+	require.NoError(t, jr.Enqueue(s.ID, model.StageExtract))
+
+	j, _ := jr.Claim("w")
+	require.NoError(t, jr.RecordFailureWithBackoff(j.ID, "boom", 10*time.Millisecond))
+
+	got, _ := jr.GetBySubmission(s.ID)
+	require.Equal(t, 1, got.Attempts)
+	require.Equal(t, model.JobPending, got.Status)
+	require.WithinDuration(t, time.Now().Add(10*time.Millisecond), got.NextRunAt, 200*time.Millisecond)
+}

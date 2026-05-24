@@ -85,6 +85,23 @@ func (r *JobRepo) RecordFailure(jobID uint, errMsg string) error {
 	return r.DB.Save(&j).Error
 }
 
+// RecordFailureWithBackoff is like RecordFailure but uses the caller-supplied
+// backoff instead of the package's default schedule. Intended for tests that
+// need fast retries.
+func (r *JobRepo) RecordFailureWithBackoff(jobID uint, errMsg string, after time.Duration) error {
+	var j model.Job
+	if err := r.DB.First(&j, jobID).Error; err != nil {
+		return err
+	}
+	j.Attempts++
+	j.LastError = &errMsg
+	j.Status = model.JobPending
+	j.LockedBy = nil
+	j.LockedAt = nil
+	j.NextRunAt = time.Now().Add(after)
+	return r.DB.Save(&j).Error
+}
+
 func (r *JobRepo) MarkPermanentFailure(jobID uint, errMsg string) error {
 	return r.DB.Model(&model.Job{}).Where("id = ?", jobID).
 		Updates(map[string]any{"status": model.JobFailed, "last_error": errMsg}).Error
