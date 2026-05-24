@@ -1,0 +1,22 @@
+services:
+  samqna:
+    build: .
+    image: samqna:latest
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./data:/data
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY}
+      - TURNSTILE_SECRET=${TURNSTILE_SECRET}
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - WORKER_COUNT=2
+      - QUALITY_THRESHOLD=30
+    deploy:
+      resources:
+        limits:
+          memory: 2g
