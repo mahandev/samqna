@@ -33,9 +33,9 @@ func New() (*Renderer, error) {
 	defs := []pageDef{
 		{"landing", []string{"layout.html", "landing.html"}},
 		{"submit", []string{"layout.html", "submit.html"}},
-		{"dashboard", []string{"layout.html", "dashboard.html", "components/card.html", "components/tag_chip.html"}},
-		{"video", []string{"layout.html", "video.html", "components/tag_chip.html"}},
-		{"list_fragment", []string{"list_fragment.html", "components/card.html"}},
+		{"dashboard", []string{"layout.html", "dashboard.html", "list_fragment.html", "components/card.html", "components/tag_chip.html"}},
+		{"video", []string{"layout.html", "video.html", "status_fragment.html", "components/tag_chip.html"}},
+		{"list_fragment", []string{"list_fragment.html", "components/card.html", "components/tag_chip.html"}},
 		{"status_fragment", []string{"status_fragment.html"}},
 	}
 	for _, d := range defs {
