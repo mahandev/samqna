@@ -24,7 +24,7 @@ func RegisterAdmin(r *gin.Engine, d *Deps) {
 		}
 	}
 
-	g := r.Group("/admin", adminAuth(d.Cfg.AdminToken, d.CFAccess))
+	g := r.Group("/admin", adminAuth(d.Cfg.AdminToken, d.CFAccess, d.GoogleAuth))
 
 	g.GET("/", func(c *gin.Context) {
 		audits, _ := adm.RecentAudits(200)
@@ -165,22 +165,39 @@ func RegisterAdmin(r *gin.Engine, d *Deps) {
 // On miss it returns 404 (NOT 401) so the existence of /admin is hidden
 // from random scanners. The authenticated actor is stashed in the context
 // under adminActorKey so handlers can record it in the audit log.
-func adminAuth(token string, verifier *auth.Verifier) gin.HandlerFunc {
+func adminAuth(token string, verifier *auth.Verifier, google *auth.GoogleAuth) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// CF Access path
-		if verifier.Enabled() {
-			raw := c.GetHeader("Cf-Access-Jwt-Assertion")
-			if email, ok := verifier.ValidEmail(raw); ok {
+		// 1. Google OAuth session cookie (the normal browser path)
+		if google.Enabled() {
+			if email, ok := google.ValidEmail(c.Request); ok {
 				c.Set(adminActorKey, email)
 				c.Next()
 				return
 			}
 		}
-		// Static-token path (scripts / curl)
+		// 2. Cloudflare Access JWT (optional, only active if AUD configured)
+		if verifier.Enabled() {
+			if email, ok := verifier.ValidEmail(c.GetHeader("Cf-Access-Jwt-Assertion")); ok {
+				c.Set(adminActorKey, email)
+				c.Next()
+				return
+			}
+		}
+		// 3. Static token for scripts / curl
 		given := c.GetHeader("X-Admin-Token")
 		if token != "" && subtle.ConstantTimeCompare([]byte(given), []byte(token)) == 1 {
 			c.Set(adminActorKey, "token")
 			c.Next()
+			return
+		}
+		// Browser fallback: send GETs (page loads) to /admin/login so the
+		// signed-out creator can start the OAuth flow. JSON/HTMX/POST
+		// requests still get 404 to hide existence.
+		if google.Enabled() && c.Request.Method == http.MethodGet &&
+			!strings.Contains(c.GetHeader("Accept"), "application/json") &&
+			c.GetHeader("HX-Request") == "" {
+			c.Redirect(http.StatusSeeOther, "/admin/login")
+			c.Abort()
 			return
 		}
 		c.AbortWithStatus(http.StatusNotFound)

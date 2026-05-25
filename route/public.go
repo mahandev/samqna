@@ -38,6 +38,7 @@ type Deps struct {
 	ExportSvc   *service.Export
 	AdminSvc    *service.Admin
 	CFAccess    *auth.Verifier
+	GoogleAuth  *auth.GoogleAuth
 }
 
 // RegisterPublic mounts all unauthenticated routes onto r.
@@ -63,6 +64,12 @@ func RegisterPublic(r *gin.Engine, d *Deps) {
 	r.GET("/v/:id/thumb", func(c *gin.Context) { fileHandler(c, d, "thumb") })
 	r.GET("/v/:id/video", func(c *gin.Context) { fileHandler(c, d, "video") })
 	r.GET("/v/:id/audio", func(c *gin.Context) { fileHandler(c, d, "audio") })
+
+	// Google OAuth login flow (no-op stubs return 404 when Google auth is disabled)
+	r.GET("/admin/login", func(c *gin.Context) { adminLoginHandler(c, d) })
+	r.GET("/auth/google/callback", func(c *gin.Context) { googleCallbackHandler(c, d) })
+	r.POST("/admin/logout", func(c *gin.Context) { adminLogoutHandler(c, d) })
+	r.GET("/admin/logout", func(c *gin.Context) { adminLogoutHandler(c, d) })
 
 	r.GET("/tags", func(c *gin.Context) {
 		m, err := d.Tags.AllWithCounts()
@@ -123,17 +130,22 @@ func wantsJSON(c *gin.Context) bool {
 	return strings.Contains(a, "application/json")
 }
 
-// isAdmin checks whether the current request carries a valid Cloudflare
-// Access JWT (i.e. the user is signed in as the creator). The public
-// pages stay readable to everyone — admin status only controls whether
-// the inline manage buttons render.
+// isAdmin checks whether the current request is authenticated as the
+// creator via EITHER the Google OAuth session cookie or a Cloudflare
+// Access JWT. Public pages stay readable to everyone — admin status
+// only controls whether the inline manage buttons render.
 func isAdmin(c *gin.Context, d *Deps) bool {
-	if d.CFAccess == nil || !d.CFAccess.Enabled() {
-		return false
+	if d.GoogleAuth != nil && d.GoogleAuth.Enabled() {
+		if _, ok := d.GoogleAuth.ValidEmail(c.Request); ok {
+			return true
+		}
 	}
-	raw := c.GetHeader("Cf-Access-Jwt-Assertion")
-	_, ok := d.CFAccess.ValidEmail(raw)
-	return ok
+	if d.CFAccess != nil && d.CFAccess.Enabled() {
+		if _, ok := d.CFAccess.ValidEmail(c.GetHeader("Cf-Access-Jwt-Assertion")); ok {
+			return true
+		}
+	}
+	return false
 }
 
 func submitHandler(c *gin.Context, d *Deps) {
@@ -365,6 +377,39 @@ func fileHandler(c *gin.Context, d *Deps, kind string) {
 		return
 	}
 	http.ServeFile(c.Writer, c.Request, path)
+}
+
+func adminLoginHandler(c *gin.Context, d *Deps) {
+	if d.GoogleAuth == nil || !d.GoogleAuth.Enabled() {
+		c.AbortWithStatus(http.StatusNotFound) // hide existence when not configured
+		return
+	}
+	secure := c.Request.TLS != nil || strings.HasPrefix(c.GetHeader("X-Forwarded-Proto"), "https") || c.GetHeader("Cf-Visitor") != ""
+	url := d.GoogleAuth.BeginLogin(c.Writer, secure)
+	c.Redirect(http.StatusSeeOther, url)
+}
+
+func googleCallbackHandler(c *gin.Context, d *Deps) {
+	if d.GoogleAuth == nil || !d.GoogleAuth.Enabled() {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	secure := c.Request.TLS != nil || strings.HasPrefix(c.GetHeader("X-Forwarded-Proto"), "https") || c.GetHeader("Cf-Visitor") != ""
+	email, err := d.GoogleAuth.CompleteLogin(c.Request.Context(), c.Writer, c.Request, secure)
+	if err != nil {
+		c.String(http.StatusForbidden, "Sign-in failed: "+err.Error())
+		return
+	}
+	_ = email
+	c.Redirect(http.StatusSeeOther, "/admin/")
+}
+
+func adminLogoutHandler(c *gin.Context, d *Deps) {
+	if d.GoogleAuth != nil && d.GoogleAuth.Enabled() {
+		secure := c.Request.TLS != nil || strings.HasPrefix(c.GetHeader("X-Forwarded-Proto"), "https") || c.GetHeader("Cf-Visitor") != ""
+		d.GoogleAuth.Logout(c.Writer, secure)
+	}
+	c.Redirect(http.StatusSeeOther, "/")
 }
 
 func healthHandler(c *gin.Context, d *Deps) {

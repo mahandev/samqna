@@ -36,6 +36,13 @@ type Config struct {
 	// header is the only remaining path in that mode.
 	CFAccessTeamDomain string
 	CFAccessAUD        string
+
+	// Direct Google OAuth (no Cloudflare Zero Trust required).
+	GoogleClientID     string
+	GoogleClientSecret string
+	AdminEmail         string // single allow-listed email
+	SessionSecret      string // ≥ 32 chars; HMAC key for session cookies
+	PublicBaseURL      string // e.g. "https://samsulekqna.xyz"
 }
 
 func Load() (*Config, error) {
@@ -60,6 +67,11 @@ func Load() (*Config, error) {
 		RetentionDays:      getenvInt("RETENTION_DAYS", 30),
 		CFAccessTeamDomain: os.Getenv("CF_ACCESS_TEAM_DOMAIN"),
 		CFAccessAUD:        os.Getenv("CF_ACCESS_AUD"),
+		GoogleClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
+		GoogleClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+		AdminEmail:         os.Getenv("ADMIN_EMAIL"),
+		SessionSecret:      os.Getenv("SESSION_SECRET"),
+		PublicBaseURL:      os.Getenv("PUBLIC_BASE_URL"),
 	}
 	if c.AdminToken == "" {
 		return nil, fmt.Errorf("ADMIN_TOKEN env var is required")

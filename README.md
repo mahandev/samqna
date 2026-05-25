@@ -23,6 +23,29 @@ CF Access stays disabled when `CF_ACCESS_AUD` is empty — admin actions then on
 3. Point a Cloudflare Tunnel at port 9000.
 4. `curl https://<your-domain>/healthz` to verify.
 
+## Direct Google OAuth for `/admin*` (recommended — no credit card)
+
+Skip Cloudflare Zero Trust entirely. Standard Google OAuth, single allow-listed email, HMAC-signed session cookie.
+
+1. https://console.cloud.google.com → create a project (or use existing).
+2. **APIs & Services → OAuth consent screen** → User Type "External" → fill app name + your email → add yourself under **Test users**.
+3. **Credentials → Create Credentials → OAuth client ID** → Application type **Web application**.
+   - **Authorized redirect URI**: `https://samsulekqna.xyz/auth/google/callback`
+4. Copy the **Client ID** and **Client secret**.
+5. Generate a session key: `openssl rand -hex 32`
+6. Fill in `.env`:
+   ```
+   GOOGLE_OAUTH_CLIENT_ID=<id>.apps.googleusercontent.com
+   GOOGLE_OAUTH_CLIENT_SECRET=<secret>
+   ADMIN_EMAIL=your.email@gmail.com
+   SESSION_SECRET=<the openssl hex>
+   PUBLIC_BASE_URL=https://samsulekqna.xyz
+   ```
+7. `docker compose up -d` to pick up the env.
+8. Visit `https://samsulekqna.xyz/admin/` → auto-redirects to Google → after sign-in, dashboard renders. Any other email is rejected.
+
+Logout: `https://samsulekqna.xyz/admin/logout`. The cookie also has a 24h expiry built in.
+
 ## Cloudflare Access for `/admin*`
 
 Browser-friendly admin auth via Google (or email OTP). Free Cloudflare Zero Trust. ~3 min in the dashboard:

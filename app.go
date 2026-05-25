@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -107,15 +108,25 @@ func CreateNewApp() (*App, error) {
 
 	cfVerifier, err := auth.New(context.Background(), cfg.CFAccessTeamDomain, cfg.CFAccessAUD)
 	if err != nil {
-		// JWKS fetch failure at startup is loud on purpose — degrades to
-		// "no Cloudflare Access" rather than silently disabling auth.
 		slog.Error("cloudflare access verifier disabled", "err", err)
 		cfVerifier = nil
 	}
 	if cfVerifier == nil {
-		slog.Info("CF Access disabled (no team domain / aud) — admin via X-Admin-Token only")
+		slog.Info("CF Access disabled (no team domain / aud)")
 	} else {
 		slog.Info("CF Access enabled", "team", cfg.CFAccessTeamDomain)
+	}
+
+	googleRedirect := strings.TrimRight(cfg.PublicBaseURL, "/") + "/auth/google/callback"
+	googleAuth, err := auth.NewGoogleAuth(cfg.GoogleClientID, cfg.GoogleClientSecret, googleRedirect, cfg.AdminEmail, cfg.SessionSecret)
+	if err != nil {
+		slog.Error("google oauth disabled", "err", err)
+		googleAuth = nil
+	}
+	if googleAuth == nil {
+		slog.Info("Google OAuth disabled (set GOOGLE_OAUTH_CLIENT_ID + _SECRET + ADMIN_EMAIL + SESSION_SECRET + PUBLIC_BASE_URL to enable)")
+	} else {
+		slog.Info("Google OAuth enabled", "redirect", googleRedirect, "allowed_email", cfg.AdminEmail)
 	}
 
 	router := gin.New()
@@ -125,7 +136,7 @@ func CreateNewApp() (*App, error) {
 		Subs: subRepo, Jobs: jobRepo, Tags: tagRepo, IPs: ipRepo,
 		Storage: st, View: vw,
 		Submissions: subSvc, ExportSvc: exportSvc,
-		AdminSvc: adminSvc, CFAccess: cfVerifier,
+		AdminSvc: adminSvc, CFAccess: cfVerifier, GoogleAuth: googleAuth,
 	}
 	route.RegisterPublic(router, deps)
 	route.RegisterAdmin(router, deps)
